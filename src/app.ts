@@ -5,6 +5,7 @@ import { PauseState } from './core/pause';
 import { settingsSchema } from './core/settings';
 import { browserStorage, Store } from './core/store';
 import { progressSchema } from './game/save';
+import { Session } from './game/session';
 import { PlatformServices } from './services/platform';
 
 export class App {
@@ -23,26 +24,29 @@ export class App {
     development: import.meta.env.DEV,
   });
   readonly pause = new PauseState((paused) => {
-    if (this.game?.scene.isActive('Game') && paused)
-      this.game.scene.pause('Game');
-    else if (this.game?.scene.isPaused('Game') && !paused)
-      this.game.scene.resume('Game');
+    for (const key of gameConfig.pausableScenes) {
+      if (paused && this.game?.scene.isActive(key)) this.game.scene.pause(key);
+      else if (!paused && this.game?.scene.isPaused(key))
+        this.game.scene.resume(key);
+    }
     this.audio?.suspend(paused);
     this.onState();
   });
+  /** 게임이 정의한 진행 중 상태(점수, 화면 모드 등). 저장하지 않는다. */
+  readonly session = new Session();
   game?: Phaser.Game;
   audio?: AudioService;
-  mode: 'menu' | 'playing' | 'result' = 'menu';
-  score = 0;
+  /** Preload가 필수 asset을 모두 불러오면 true. */
   ready = false;
+  /** 사용자에게 보여줄 asset 로딩 실패 또는 처리되지 않은 오류. */
   loadingError = '';
+  fatalError = '';
   onState = () => {};
   private cleanup: (() => void)[] = [];
 
   attach(game: Phaser.Game) {
     this.game = game;
-    this.audio = new AudioService(game.sound);
-    this.audio.apply(this.settings.data);
+    this.audio = new AudioService(game.sound, this.settings.data);
     const visibility = () => {
       if (document.hidden) this.flush();
       this.pause.set('hidden', document.hidden);

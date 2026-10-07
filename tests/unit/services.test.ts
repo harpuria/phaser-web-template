@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockAdapter, PlatformServices } from '../../src/services/platform';
 import { PauseState } from '../../src/core/pause';
+import { watchUncaughtErrors } from '../../src/core/errors';
+import { roundMs } from '../../src/game/session';
 import { settingsSchema } from '../../src/core/settings';
 
 const options = {
@@ -66,6 +68,33 @@ it('does not resume manual pause when tab visibility or a dialog recovers', () =
   expect(changes).toEqual([true, false]);
 });
 
+it('lets the manual toggle ignore pauses owned by other reasons', () => {
+  const pause = new PauseState(() => {});
+  pause.set('service', true);
+  expect(pause.paused).toBe(true);
+  expect(pause.has('manual')).toBe(false);
+  pause.set('manual', !pause.has('manual'));
+  pause.set('service', false);
+  expect(pause.paused).toBe(true);
+  pause.set('manual', !pause.has('manual'));
+  expect(pause.paused).toBe(false);
+});
+
+it('reports uncaught errors and rejections until stopped', () => {
+  const target = new EventTarget();
+  const messages: string[] = [];
+  const stop = watchUncaughtErrors((message) => messages.push(message), target);
+  const error = Object.assign(new Event('error'), { error: new Error('boom') });
+  const rejection = Object.assign(new Event('unhandledrejection'), {
+    reason: 'lost',
+  });
+  target.dispatchEvent(error);
+  target.dispatchEvent(rejection);
+  stop();
+  target.dispatchEvent(error);
+  expect(messages).toEqual(['boom', 'lost']);
+});
+
 it('rejects malformed settings, including nonfinite and out-of-range audio', () => {
   const schema = settingsSchema();
   expect(schema.validate(schema.defaults())).toBe(true);
@@ -73,4 +102,12 @@ it('rejects malformed settings, including nonfinite and out-of-range audio', () 
     expect(schema.validate({ ...schema.defaults(), master: volume })).toBe(
       false,
     );
+});
+
+it('only shortens the demo round through the query string', () => {
+  expect(roundMs('')).toBe(30_000);
+  expect(roundMs('?round=4')).toBe(4_000);
+  expect(roundMs('?round=999')).toBe(30_000);
+  for (const bad of ['?round=0', '?round=-3', '?round=abc'])
+    expect(roundMs(bad)).toBe(30_000);
 });

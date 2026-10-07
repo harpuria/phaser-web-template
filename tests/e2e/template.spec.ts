@@ -5,7 +5,8 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
 }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
+  // `?round=4` shortens the demo round so the full flow runs in seconds.
+  await page.goto('/?round=4');
   await expect(page.locator('#game canvas')).toBeVisible();
   await expect(page.locator('#mode-label')).toHaveText('MENU');
   // The canvas exists before preload ends; wait for actual UI readiness.
@@ -22,6 +23,13 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
   await expect(page.locator('#pause-overlay')).toBeHidden();
   const canvas = page.locator('#game canvas');
   const box = (await canvas.boundingBox())!;
+  // Hold the input until the round ends. Round time and movement both use game
+  // time, so a slow runner (where Phaser clamps frame delta) cannot miss the
+  // star the way a fixed real-time hold could.
+  const roundEnds = () =>
+    expect(page.locator('#mode-label')).toHaveText('RESULT', {
+      timeout: 20_000,
+    });
   if (testInfo.project.name === 'mobile') {
     const touch = await page.context().newCDPSession(page);
     await touch.send('Input.dispatchTouchEvent', {
@@ -33,7 +41,7 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
         },
       ],
     });
-    await page.waitForTimeout(850);
+    await roundEnds();
     await touch.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
@@ -41,11 +49,9 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
     await touch.detach();
   } else {
     await page.keyboard.down('ArrowRight');
-    await page.waitForTimeout(650);
+    await roundEnds();
     await page.keyboard.up('ArrowRight');
   }
-  await page.waitForTimeout(30_000);
-  await expect(page.locator('#mode-label')).toHaveText('RESULT');
   await expect(page.locator('#best')).not.toHaveText('0');
   await expect(page.locator('#rounds')).toHaveText('1');
   await page.screenshot({
@@ -122,4 +128,38 @@ test('asset failure keeps the game disabled and shows recovery instructions', as
   await expect(
     page.getByRole('button', { name: '플레이 시작' }),
   ).toBeDisabled();
+});
+
+test('manual pause toggles independently and fullscreen is offered', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Escape needs a keyboard');
+  await page.goto('/');
+  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await expect(page.locator('#mode-label')).toHaveText('PLAYING');
+  await page.locator('#game').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: '계속하기' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#pause-overlay')).toBeHidden();
+  await page.getByRole('button', { name: '전체화면' }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement?.id))
+    .toBe('stage');
+  await page.getByRole('button', { name: '전체화면 나가기' }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement))
+    .toBeNull();
+});
+
+test('uncaught errors show a recovery screen', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
+  await page.evaluate(() => {
+    setTimeout(() => {
+      throw new Error('demo failure');
+    });
+  });
+  await expect(page.getByRole('alert')).toContainText('demo failure');
+  await expect(page.getByRole('button', { name: '새로고침' })).toBeVisible();
 });
