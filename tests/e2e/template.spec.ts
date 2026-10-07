@@ -23,6 +23,13 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
   await expect(page.locator('#pause-overlay')).toBeHidden();
   const canvas = page.locator('#game canvas');
   const box = (await canvas.boundingBox())!;
+  // Hold the input until the round ends. Round time and movement both use game
+  // time, so a slow runner (where Phaser clamps frame delta) cannot miss the
+  // star the way a fixed real-time hold could.
+  const roundEnds = () =>
+    expect(page.locator('#mode-label')).toHaveText('RESULT', {
+      timeout: 20_000,
+    });
   if (testInfo.project.name === 'mobile') {
     const touch = await page.context().newCDPSession(page);
     await touch.send('Input.dispatchTouchEvent', {
@@ -34,7 +41,7 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
         },
       ],
     });
-    await page.waitForTimeout(850);
+    await roundEnds();
     await touch.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
@@ -42,12 +49,9 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
     await touch.detach();
   } else {
     await page.keyboard.down('ArrowRight');
-    await page.waitForTimeout(650);
+    await roundEnds();
     await page.keyboard.up('ArrowRight');
   }
-  await expect(page.locator('#mode-label')).toHaveText('RESULT', {
-    timeout: 10_000,
-  });
   await expect(page.locator('#best')).not.toHaveText('0');
   await expect(page.locator('#rounds')).toHaveText('1');
   await page.screenshot({

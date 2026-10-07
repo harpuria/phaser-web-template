@@ -12,7 +12,8 @@
 
 - 브라우저: 환경에 설치된 Chromium(Playwright build 1194)을 `executablePath`로 지정해 실행. Playwright 1.63.0 번들 Chromium은 아님.
 - 문서의 장면·migration 예제 코드는 임시 파일로 타입 검사와 실행 검사를 통과한 뒤 삭제.
-- GitHub Actions의 v7 action 구성은 이 브랜치 push 후 원격 결과로 확인 필요.
+- GitHub Actions 첫 PR 실행에서 메인 E2E(desktop)가 별을 못 모아 실패. 키를 실제 시간 650ms만 누르는데, 느린 runner에서는 Phaser가 프레임 delta를 제한해 게임 시간이 느리게 흘러 별까지 닿지 못함. 판이 끝날 때까지 입력을 유지하도록 고친 뒤 CPU 10배 throttling에서 desktop/mobile 3회 연속 통과.
+- v7 action(checkout, setup-node, upload-artifact)은 위 원격 실행에서 정상 동작 확인.
 
 ## 0.1.0 — 2026-10-04 · macOS arm64 · Node 24.16.0
 

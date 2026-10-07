@@ -4,7 +4,7 @@ const preview = process.env.E2E_PREVIEW === '1';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
-  timeout: 30_000,
+  timeout: 45_000,
   use: { baseURL: 'http://127.0.0.1:4173', trace: 'retain-on-failure' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
