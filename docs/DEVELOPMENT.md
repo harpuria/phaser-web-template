@@ -28,7 +28,9 @@
 // src/game/MyGame.ts
 import Phaser from 'phaser';
 import type { App } from '../app';
+import { gameConfig } from '../config/game';
 import { MoveInput } from '../core/input';
+import { centerSafeArea } from '../core/viewport';
 import { assetKeys } from './assets';
 
 export class MyGame extends Phaser.Scene {
@@ -39,6 +41,7 @@ export class MyGame extends Phaser.Scene {
     super('MyGame'); // gameConfig.startScene / pausableScenes 와 같은 이름
   }
   create() {
+    centerSafeArea(this, gameConfig.width, gameConfig.height); // 화면 크기와 전체화면 참고
     this.player = this.physics.add.image(100, 100, assetKeys.player);
     this.controls = new MoveInput(this);
     this.app.audio?.playMusic(assetKeys.music);
@@ -137,9 +140,25 @@ const persisted = this.app.save.flush(); // false면 "저장됨"이라고 표시
 
 ## 화면 크기와 전체화면
 
-- 기본은 고정 논리 해상도(960×540) + `FIT`입니다. 좌표는 `this.scale.width/height`를 기준으로 계산하면 해상도를 바꿔도 따라옵니다.
-- 세로 게임은 `width`/`height`를 바꾸고 `orientation: 'portrait'`로 둡니다. HTML 영역의 비율은 Shell이 config에서 읽습니다.
-- 전체화면 버튼은 지원 브라우저에서만 보입니다(iPhone Safari는 미지원). 전체화면에서 권장 방향이 아니면 회전 안내가 뜹니다.
+Phaser `Scale.EXPAND`를 씁니다. `gameConfig`의 `width`×`height`(기본 960×540)가 **안전 영역**이고, 화면 비율이 다르면 게임 크기가 늘어나 남는 공간이 보입니다.
+
+- 장면 `create()`에서 `centerSafeArea(this, gameConfig.width, gameConfig.height)`를 호출하면 안전 영역이 화면 중앙에 옵니다(예제는 `background()` 안에서 호출).
+- 점수·버튼·플레이 영역처럼 꼭 보여야 하는 것은 안전 영역 좌표(0..width, 0..height) 안에 둡니다. 배경은 바깥까지 넉넉히 그립니다.
+- 화면을 덮는 반투명 판 등은 안전 영역보다 크게 그립니다(예제의 결과 화면은 3배 크기).
+
+HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
+
+| 화면                                    | 배치                                                               |
+| --------------------------------------- | ------------------------------------------------------------------ |
+| 폭 1025px 이상                          | 게임 + 오른쪽 사이드바                                             |
+| 폭 1024px 이하                          | 사이드바를 게임 아래로                                             |
+| 가로이면서 높이 500px 이하(휴대폰 가로) | 헤더·소개 숨김, 게임이 화면 높이를 모두 쓰고 버튼은 오른쪽 세로 줄 |
+| 터치 기기에서 권장 방향이 아닐 때       | 버튼 줄에 "기기를 가로로 돌리면 더 크게…" 안내                     |
+
+- 게임 카드(제목 줄 + 캔버스 + 버튼 줄)는 화면 높이를 넘지 않게 줄어들고(`--stage-chrome`), 플레이를 시작하면 카드 전체가 보이도록 스크롤합니다.
+- 세로 게임은 `width: 540, height: 960, orientation: 'portrait'`로 바꿉니다. 안내 문구와 전체화면 회전 안내도 이 값을 따릅니다.
+- 전체화면 버튼은 지원 브라우저에서만 보입니다(iPhone Safari는 미지원). 전체화면에서는 게임이 화면 전체로 늘어나고, 권장 방향이 아니면 회전 안내가 뜹니다.
+- 고해상도(레티나) 화면에서는 960×540으로 그린 결과를 늘리므로 다소 흐릴 수 있습니다. 선명도가 중요하면 기본 해상도를 높이거나 Text의 `resolution`을 올립니다.
 
 ## 디버그와 오류
 

@@ -27,7 +27,8 @@ const game = new Phaser.Game({
   backgroundColor: gameConfig.background,
   pixelArt: gameConfig.pixelArt,
   scale: {
-    mode: Phaser.Scale.FIT,
+    // EXPAND: 화면 비율이 달라도 기본 해상도 영역을 모두 보이고 남는 공간은 배경으로 채운다.
+    mode: Phaser.Scale.EXPAND,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     fullscreenTarget: 'stage',
   },

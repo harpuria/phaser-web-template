@@ -1,18 +1,22 @@
 import Phaser from 'phaser';
 import type { App } from '../app';
+import { gameConfig } from '../config/game';
 import { MoveInput } from '../core/input';
 import { transition } from '../core/navigation';
+import { centerSafeArea } from '../core/viewport';
 import { assetKeys } from './assets';
 import { roundMs } from './session';
 
+/** 안전 영역(기본 해상도) 크기. 장면은 이 좌표로 배치한다. */
+const { width: W, height: H } = gameConfig;
+
+/** 격자는 안전 영역 바깥까지 그려 EXPAND로 늘어난 가장자리도 배경으로 채운다. */
 function background(scene: Phaser.Scene) {
-  const { width, height } = scene.scale;
+  centerSafeArea(scene, W, H);
   const grid = scene.add.graphics().lineStyle(1, 0x263448, 0.65);
-  for (let x = 0; x < width; x += 48) grid.lineBetween(x, 0, x, height);
-  for (let y = 0; y < height; y += 48) grid.lineBetween(0, y, width, y);
-  grid
-    .lineStyle(2, 0x344458)
-    .strokeRoundedRect(26, 26, width - 52, height - 52, 20);
+  for (let x = -W; x < 2 * W; x += 48) grid.lineBetween(x, -H, x, 2 * H);
+  for (let y = -H; y < 2 * H; y += 48) grid.lineBetween(-W, y, 2 * W, y);
+  grid.lineStyle(2, 0x344458).strokeRoundedRect(26, 26, W - 52, H - 52, 20);
 }
 
 export class MenuScene extends Phaser.Scene {
@@ -20,7 +24,7 @@ export class MenuScene extends Phaser.Scene {
     super('Menu');
   }
   create() {
-    const cx = this.scale.width / 2;
+    const cx = W / 2;
     this.app.session.mode = 'menu';
     this.app.onState();
     background(this);
@@ -77,16 +81,15 @@ export class GameScene extends Phaser.Scene {
     super('Game');
   }
   create() {
-    const { width, height } = this.scale;
     this.ended = false;
     this.remaining = roundMs();
     this.app.session.score = 0;
     this.app.session.mode = 'playing';
     this.app.onState();
     background(this);
-    this.physics.world.setBounds(46, 82, width - 92, height - 134);
+    this.physics.world.setBounds(46, 82, W - 92, H - 134);
     this.player = this.physics.add
-      .image(width / 2, 300, assetKeys.player)
+      .image(W / 2, 300, assetKeys.player)
       .setCircle(23, 3, 3)
       .setCollideWorldBounds(true);
     this.star = this.physics.add
@@ -127,7 +130,6 @@ export class GameScene extends Phaser.Scene {
   }
   finish() {
     if (this.ended) return;
-    const { width, height } = this.scale;
     const score = this.app.session.score;
     this.ended = true;
     this.player.setVelocity(0, 0);
@@ -140,10 +142,11 @@ export class GameScene extends Phaser.Scene {
     this.app.session.mode = 'result';
     this.app.onState();
     this.add
-      .rectangle(width / 2, height / 2, width, height, 0x101827, 0.92)
+      // 늘어난 가장자리까지 덮도록 안전 영역보다 크게 그린다.
+      .rectangle(W / 2, H / 2, W * 3, H * 3, 0x101827, 0.92)
       .setDepth(10);
     this.add
-      .text(width / 2, 230, `${score}개의 별을 모았어요`, {
+      .text(W / 2, 230, `${score}개의 별을 모았어요`, {
         fontFamily: 'sans-serif',
         fontSize: '42px',
         fontStyle: 'bold',
@@ -156,7 +159,7 @@ export class GameScene extends Phaser.Scene {
         ? '기록을 저장했습니다. 다시 도전해 보세요!'
         : '기록을 저장하지 못했습니다. 저장 상태를 확인해 주세요.';
     this.add
-      .text(width / 2, 300, message, {
+      .text(W / 2, 300, message, {
         fontFamily: 'sans-serif',
         fontSize: '21px',
         color: '#cbd5e1',

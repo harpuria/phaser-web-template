@@ -3,7 +3,7 @@
 Phaser로 데스크톱·모바일 웹 게임을 만드는 시작용 프로젝트입니다.
 저장, 설정, 오디오, 일시정지, 입력, 전체화면, 광고·결제 연결 지점처럼 매번 반복되는 준비를 미리 해 두었습니다.
 
-**Phaser 4.2.1 · TypeScript · Vite · 템플릿 0.2.0** — 버전과 선택 근거는 [의존성](docs/DEPENDENCIES.md)에 있습니다.
+**Phaser 4.2.1 · TypeScript · Vite · 템플릿 0.3.0** — 버전과 선택 근거는 [의존성](docs/DEPENDENCIES.md)에 있습니다.
 
 ## 실행하기
 
@@ -20,17 +20,17 @@ npm run dev
 
 ## 들어 있는 기능
 
-| 기능                                         | 위치                                    |
-| -------------------------------------------- | --------------------------------------- |
-| Boot → Preload → 시작 장면, 페이드 전환      | `src/scenes/`, `src/core/navigation.ts` |
-| 키보드·마우스·터치·게임패드 이동 입력        | `src/core/input.ts`                     |
-| 저장 버전·순차 migration·손상 데이터 보호    | `src/core/store.ts`, `src/game/save.ts` |
-| 음소거·전체/BGM/SFX 음량, 움직임 줄이기 설정 | `src/core/settings.ts`, `audio.ts`      |
-| 수동·설정창·탭 숨김 일시정지                 | `src/core/pause.ts`                     |
-| 반응형 화면, 전체화면·방향 안내              | `src/core/screen.ts`, `src/ui/Shell.ts` |
-| 처리되지 않은 오류 안내 화면                 | `src/core/errors.ts`                    |
-| 광고·결제·분석 Adapter와 개발용 Mock         | `src/services/platform.ts`              |
-| 린트·포맷·타입·단위·브라우저 검사, CI        | `npm run check`, `npm run test:e2e`     |
+| 기능                                              | 위치                                                   |
+| ------------------------------------------------- | ------------------------------------------------------ |
+| Boot → Preload → 시작 장면, 페이드 전환           | `src/scenes/`, `src/core/navigation.ts`                |
+| 키보드·마우스·터치·게임패드 이동 입력             | `src/core/input.ts`                                    |
+| 저장 버전·순차 migration·손상 데이터 보호         | `src/core/store.ts`, `src/game/save.ts`                |
+| 음소거·전체/BGM/SFX 음량, 움직임 줄이기 설정      | `src/core/settings.ts`, `audio.ts`                     |
+| 수동·설정창·탭 숨김 일시정지                      | `src/core/pause.ts`                                    |
+| 반응형 화면(EXPAND 안전 영역), 전체화면·회전 안내 | `src/core/viewport.ts`, `screen.ts`, `src/ui/Shell.ts` |
+| 처리되지 않은 오류 안내 화면                      | `src/core/errors.ts`                                   |
+| 광고·결제·분석 Adapter와 개발용 Mock              | `src/services/platform.ts`                             |
+| 린트·포맷·타입·단위·브라우저 검사, CI             | `npm run check`, `npm run test:e2e`                    |
 
 Mock은 성공/취소/오류 흐름을 연습하는 용도이며 실제 광고·결제·보상은 없습니다. **배포 빌드에서는 서비스가 `unavailable`을 반환**합니다.
 실제 결제·광고·로그인 SDK, 서버 저장, PWA/offline은 포함하지 않습니다.

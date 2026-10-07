@@ -17,13 +17,14 @@ export class Shell {
       <div class="workspace"><section class="stage-card" aria-label="게임 데모">
         <div class="stage-heading"><span><span class="dot"></span> STAR COLLECTOR <small>플레이 가능한 예제</small></span><span id="mode-label">MENU</span></div>
         <div class="canvas-wrap" id="stage" data-orientation="${gameConfig.orientation}"><div id="game" tabindex="0" aria-label="별 모으기 게임. 방향키, WASD, 게임패드로 이동하거나 화면을 누르세요."></div><div id="pause-overlay" class="overlay" hidden>잠시 쉬어가는 중<span>계속하기를 누르면 다시 시작합니다.</span></div><div id="rotate-hint" class="overlay">기기를 ${gameConfig.orientation === 'landscape' ? '가로' : '세로'}로 돌려 주세요<span>전체화면에서 권장 방향으로 플레이합니다.</span></div><button id="exit-fullscreen" class="secondary" aria-label="전체화면 나가기">✕</button><div id="error-overlay" class="overlay" role="alert" hidden>문제가 발생했습니다<span id="error-message"></span><button id="reload" class="primary">새로고침</button></div></div>
-        <div class="game-toolbar"><p><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> 이동 <span class="touch-hint">· 화면을 눌러 이동</span></p><div><button id="fullscreen" class="secondary" hidden>전체화면</button><button id="pause" class="secondary" hidden>일시정지</button><button id="home" class="secondary" hidden>메뉴</button><button id="play" class="primary">플레이 시작 <span>↗</span></button></div></div>
+        <div class="game-toolbar"><p><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> 이동 <span class="touch-hint">· 화면을 눌러 이동</span><span class="rotate-tip">기기를 ${gameConfig.orientation === 'landscape' ? '가로' : '세로'}로 돌리면 더 크게 플레이할 수 있어요.</span></p><div><button id="fullscreen" class="secondary" hidden>전체화면</button><button id="pause" class="secondary" hidden>일시정지</button><button id="home" class="secondary" hidden>메뉴</button><button id="play" class="primary">플레이 시작 <span>↗</span></button></div></div>
       </section>
       <aside class="sidebar"><section class="panel"><div class="panel-title"><h2>내 플레이 기록</h2><span class="tag">LOCAL SAVE</span></div><div class="stats"><div><strong id="best">0</strong><span>최고 기록</span></div><div><strong id="rounds">0</strong><span>플레이 횟수</span></div></div><p id="storage-status" class="caption"></p><button id="settings" class="wide secondary">설정 열기 <span>⚙</span></button></section>
       <section class="panel"><div class="panel-title"><h2>기본 기능</h2><span class="tag green">INCLUDED</span></div><ul class="features"><li>버전 관리가 있는 로컬 저장</li><li>음량 · 효과음 · 배경음 설정</li><li>화면 전환 · 자동 일시정지</li><li>키보드 · 마우스 · 터치 · 게임패드 입력</li><li>전체화면 · 오류 안내 화면</li><li>광고 · 결제 서비스 연결 지점</li></ul></section></aside></div>
       <section class="toolbox"><div><p class="eyebrow">SERVICE PLAYGROUND</p><h2>연결하기 전에, 가볍게 테스트</h2><p class="caption" id="service-mode"></p></div><div class="service-actions"><label class="check"><input id="consent" type="checkbox" /> Mock 분석·광고 동의</label><select id="outcome" aria-label="Mock 결과"><option value="completed">성공</option><option value="cancelled">취소</option><option value="error">오류</option></select><button id="reward" class="secondary">보상형 광고 테스트</button><button id="purchase" class="secondary">구매 테스트</button><button id="sound" class="secondary">효과음 듣기</button></div><p id="notice" role="status" aria-live="polite">준비되었습니다. 플레이를 시작해 보세요.</p></section>
       <footer><span>PHASER 4.2.1 · TYPESCRIPT · VITE</span><span>당신의 게임은 <code>src/game/</code>에서 시작됩니다.</span></footer>
       <dialog id="settings-dialog" aria-labelledby="settings-title"><form method="dialog"><div class="panel-title"><h2 id="settings-title">게임 설정</h2><button class="icon-button" aria-label="설정 닫기">✕</button></div><p class="caption">변경한 설정은 이 브라우저에 저장됩니다.</p><label class="check"><input id="muted" type="checkbox" /> 전체 음소거</label><label class="range-label">전체 음량<input id="master" type="range" min="0" max="1" step="0.05" /></label><label class="range-label">배경음<input id="music" type="range" min="0" max="1" step="0.05" /></label><label class="range-label">효과음<input id="sfx" type="range" min="0" max="1" step="0.05" /></label><label class="check"><input id="reducedMotion" type="checkbox" /> 화면 움직임 줄이기</label><hr /><p class="caption">플레이 기록 초기화는 설정을 유지합니다.</p><button id="reset" type="button" class="danger wide">플레이 기록 초기화</button><button id="reset-settings" type="button" class="secondary wide">설정 초기화 / 저장 오류 복구</button><button class="primary wide">완료</button></form></dialog>`;
+    this.root.dataset.orientation = gameConfig.orientation;
     this.root.style.setProperty('--game-w', String(gameConfig.width));
     this.root.style.setProperty('--game-h', String(gameConfig.height));
     this.bind();
@@ -54,7 +55,11 @@ export class Shell {
       if (mode === 'menu')
         (app.game!.scene.getScene('Menu') as MenuScene).startGame();
       else app.game!.scene.getScene('Game').scene.restart();
-      this.element('game').focus();
+      // 플레이 중에는 게임 카드 전체(캔버스 + 버튼 줄)가 화면 안에 오도록 스크롤한다.
+      this.element('stage')
+        .closest('.stage-card')
+        ?.scrollIntoView({ block: 'nearest' });
+      this.element('game').focus({ preventScroll: true });
     });
     this.on('pause', 'click', () => {
       app.pause.set('manual', !app.pause.has('manual'));

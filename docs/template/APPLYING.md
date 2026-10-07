@@ -1,6 +1,6 @@
 # 새 게임에 적용하기
 
-템플릿 버전: 0.2.0 · 저장소: https://github.com/harpuria/phaser-web-template
+템플릿 버전: 0.3.0 · 저장소: https://github.com/harpuria/phaser-web-template
 
 ## 새 프로젝트 만들기
 

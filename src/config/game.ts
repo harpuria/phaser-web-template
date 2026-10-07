@@ -1,6 +1,6 @@
 export const gameConfig = {
   title: 'Phaser Web Template',
-  version: '0.2.0',
+  version: '0.3.0',
   storagePrefix: 'phaser-web-template', // 새 게임마다 고유한 값으로 변경
   width: 960,
   height: 540,
