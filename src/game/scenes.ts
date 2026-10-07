@@ -1,12 +1,18 @@
 import Phaser from 'phaser';
 import type { App } from '../app';
+import { MoveInput } from '../core/input';
 import { transition } from '../core/navigation';
+import { assetKeys } from './assets';
+import { roundMs } from './session';
 
 function background(scene: Phaser.Scene) {
+  const { width, height } = scene.scale;
   const grid = scene.add.graphics().lineStyle(1, 0x263448, 0.65);
-  for (let x = 0; x < 960; x += 48) grid.lineBetween(x, 0, x, 540);
-  for (let y = 0; y < 540; y += 48) grid.lineBetween(0, y, 960, y);
-  grid.lineStyle(2, 0x344458).strokeRoundedRect(26, 26, 908, 488, 20);
+  for (let x = 0; x < width; x += 48) grid.lineBetween(x, 0, x, height);
+  for (let y = 0; y < height; y += 48) grid.lineBetween(0, y, width, y);
+  grid
+    .lineStyle(2, 0x344458)
+    .strokeRoundedRect(26, 26, width - 52, height - 52, 20);
 }
 
 export class MenuScene extends Phaser.Scene {
@@ -14,12 +20,12 @@ export class MenuScene extends Phaser.Scene {
     super('Menu');
   }
   create() {
-    this.app.ready = true;
-    this.app.mode = 'menu';
+    const cx = this.scale.width / 2;
+    this.app.session.mode = 'menu';
     this.app.onState();
     background(this);
     this.add
-      .text(480, 140, 'YOUR NEXT GAME', {
+      .text(cx, 140, 'YOUR NEXT GAME', {
         fontFamily: 'monospace',
         fontSize: '18px',
         color: '#a3e635',
@@ -27,7 +33,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(480, 202, '작은 시작, 새로운 세계', {
+      .text(cx, 202, '작은 시작, 새로운 세계', {
         fontFamily: 'sans-serif',
         fontSize: '40px',
         fontStyle: 'bold',
@@ -35,14 +41,14 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(480, 258, '별을 모으는 짧은 게임으로 템플릿을 둘러보세요.', {
+      .text(cx, 258, '별을 모으는 짧은 게임으로 템플릿을 둘러보세요.', {
         fontFamily: 'sans-serif',
         fontSize: '20px',
         color: '#94a3b8',
       })
       .setOrigin(0.5);
-    const player = this.add.image(480, 363, 'player').setScale(1.7);
-    [360, 600].forEach((x) => this.add.image(x, 363, 'star'));
+    const player = this.add.image(cx, 363, assetKeys.player).setScale(1.7);
+    [cx - 120, cx + 120].forEach((x) => this.add.image(x, 363, assetKeys.star));
     if (!this.app.settings.data.reducedMotion)
       this.tweens.add({
         targets: player,
@@ -62,29 +68,29 @@ export class MenuScene extends Phaser.Scene {
 export class GameScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Image;
   private star!: Phaser.Physics.Arcade.Image;
-  private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd?: Record<string, Phaser.Input.Keyboard.Key>;
+  private controls!: MoveInput;
   private label!: Phaser.GameObjects.Text;
-  private remaining = 30_000;
+  private remaining = 0;
   private ended = false;
 
   constructor(private app: App) {
     super('Game');
   }
   create() {
+    const { width, height } = this.scale;
     this.ended = false;
-    this.remaining = 30_000;
-    this.app.score = 0;
-    this.app.mode = 'playing';
+    this.remaining = roundMs();
+    this.app.session.score = 0;
+    this.app.session.mode = 'playing';
     this.app.onState();
     background(this);
-    this.physics.world.setBounds(46, 82, 868, 406);
+    this.physics.world.setBounds(46, 82, width - 92, height - 134);
     this.player = this.physics.add
-      .image(480, 300, 'player')
+      .image(width / 2, 300, assetKeys.player)
       .setCircle(23, 3, 3)
       .setCollideWorldBounds(true);
     this.star = this.physics.add
-      .image(650, 300, 'star')
+      .image(650, 300, assetKeys.star)
       .setCircle(17, 1, 1)
       .setImmovable(true);
     this.physics.add.overlap(this.player, this.star, () => this.collect());
@@ -93,66 +99,51 @@ export class GameScene extends Phaser.Scene {
       fontSize: '22px',
       color: '#e2e8f0',
     });
-    this.cursors = this.input.keyboard?.createCursorKeys();
-    this.wasd = this.input.keyboard?.addKeys('W,A,S,D') as typeof this.wasd;
-    this.app.audio?.playMusic();
+    this.controls = new MoveInput(this);
+    this.app.audio?.playMusic(assetKeys.music);
     this.cameras.main.fadeIn(this.app.transitionMs);
     if (this.app.pause.paused) this.scene.pause();
   }
   private collect() {
     if (this.ended) return;
-    this.app.score++;
+    const bounds = this.physics.world.bounds;
+    this.app.session.score++;
     this.star.setPosition(
-      Phaser.Math.Between(90, 870),
-      Phaser.Math.Between(120, 445),
+      Phaser.Math.Between(bounds.left + 44, bounds.right - 44),
+      Phaser.Math.Between(bounds.top + 38, bounds.bottom - 43),
     );
-    this.app.audio?.sfx();
+    this.app.audio?.sfx(assetKeys.collect);
     this.app.onState();
   }
   update(_time: number, delta: number) {
     if (this.ended) return;
-    const direction = new Phaser.Math.Vector2();
-    const focusOnControl =
-      document.activeElement instanceof HTMLElement &&
-      ['INPUT', 'BUTTON', 'SELECT'].includes(document.activeElement.tagName);
-    if (!focusOnControl) {
-      if (this.cursors?.left.isDown || this.wasd?.A?.isDown) direction.x--;
-      if (this.cursors?.right.isDown || this.wasd?.D?.isDown) direction.x++;
-      if (this.cursors?.up.isDown || this.wasd?.W?.isDown) direction.y--;
-      if (this.cursors?.down.isDown || this.wasd?.S?.isDown) direction.y++;
-    }
-    const pointer = this.input.activePointer;
-    if (pointer.isDown && pointer.downElement === this.game.canvas) {
-      direction.set(
-        pointer.worldX - this.player.x,
-        pointer.worldY - this.player.y,
-      );
-      if (direction.length() < 8) direction.set(0, 0);
-    }
-    direction.normalize().scale(290);
+    const direction = this.controls.move(this.player).scale(290);
     this.player.setVelocity(direction.x, direction.y);
     this.remaining = Math.max(0, this.remaining - delta);
     this.label.setText(
-      `STARS  ${String(this.app.score).padStart(2, '0')}                         TIME  ${Math.ceil(this.remaining / 1000)}s`,
+      `STARS  ${String(this.app.session.score).padStart(2, '0')}                         TIME  ${Math.ceil(this.remaining / 1000)}s`,
     );
     if (this.remaining === 0) this.finish();
   }
   finish() {
     if (this.ended) return;
+    const { width, height } = this.scale;
+    const score = this.app.session.score;
     this.ended = true;
     this.player.setVelocity(0, 0);
     this.app.save.update((data) => ({
-      best: Math.max(data.best, this.app.score),
+      best: Math.max(data.best, score),
       rounds: data.rounds + 1,
     }));
     this.app.flush();
     this.app.platform.track('round_completed');
-    this.app.mode = 'result';
+    this.app.session.mode = 'result';
     this.app.onState();
-    const shade = this.add.rectangle(480, 270, 960, 540, 0x101827, 0.92);
-    shade.setDepth(10);
     this.add
-      .text(480, 230, `${this.app.score}개의 별을 모았어요`, {
+      .rectangle(width / 2, height / 2, width, height, 0x101827, 0.92)
+      .setDepth(10);
+    this.add
+      .text(width / 2, 230, `${score}개의 별을 모았어요`, {
         fontFamily: 'sans-serif',
         fontSize: '42px',
         fontStyle: 'bold',
@@ -165,7 +156,7 @@ export class GameScene extends Phaser.Scene {
         ? '기록을 저장했습니다. 다시 도전해 보세요!'
         : '기록을 저장하지 못했습니다. 저장 상태를 확인해 주세요.';
     this.add
-      .text(480, 300, message, {
+      .text(width / 2, 300, message, {
         fontFamily: 'sans-serif',
         fontSize: '21px',
         color: '#cbd5e1',

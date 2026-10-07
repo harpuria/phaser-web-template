@@ -179,7 +179,7 @@ h2 {
 }
 #game {
   width: 100%;
-  aspect-ratio: 16/9;
+  aspect-ratio: var(--game-w, 16) / var(--game-h, 9);
   position: relative;
   overflow: hidden;
   touch-action: none;
@@ -187,7 +187,7 @@ h2 {
 #game canvas {
   display: block;
 }
-#pause-overlay {
+.overlay {
   position: absolute;
   inset: 0;
   background: #101827ed;
@@ -195,14 +195,52 @@ h2 {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+  text-align: center;
   font-size: 28px;
   font-weight: 650;
   pointer-events: none;
 }
-#pause-overlay span {
+.overlay span {
   font-size: 14px;
+  font-weight: 400;
   color: #94a3b8;
-  margin-top: 15px;
+}
+#error-overlay {
+  z-index: 2;
+  pointer-events: auto;
+}
+#rotate-hint {
+  display: none;
+  z-index: 1;
+}
+#stage:fullscreen {
+  justify-content: center;
+}
+#exit-fullscreen {
+  display: none;
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 3;
+  padding: 8px 12px;
+}
+#stage:fullscreen #exit-fullscreen {
+  display: block;
+}
+#stage:fullscreen #game {
+  width: min(100%, calc(100dvh * var(--game-w) / var(--game-h)));
+}
+@media (orientation: portrait) {
+  #stage:fullscreen[data-orientation='landscape'] #rotate-hint {
+    display: flex;
+  }
+}
+@media (orientation: landscape) {
+  #stage:fullscreen[data-orientation='portrait'] #rotate-hint {
+    display: flex;
+  }
 }
 .game-toolbar {
   min-height: 80px;
@@ -560,10 +598,10 @@ dialog .primary {
   .toolbox h2 {
     font-size: 16px;
   }
-  #pause-overlay {
+  .overlay {
     font-size: 20px;
   }
-  #pause-overlay span {
+  .overlay span {
     font-size: 11px;
   }
   .stats {

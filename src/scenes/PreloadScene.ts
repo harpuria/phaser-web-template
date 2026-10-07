@@ -9,11 +9,13 @@ export class PreloadScene extends Phaser.Scene {
     super('Preload');
   }
   preload() {
+    const { width, height } = this.scale;
     const label = this.add
-      .text(480, 270, '준비 중… 0%', {
+      .text(width / 2, height / 2, '준비 중… 0%', {
         fontFamily: 'sans-serif',
         fontSize: '24px',
         color: '#e2e8f0',
+        align: 'center',
       })
       .setOrigin(0.5);
     this.load.on('progress', (value: number) => {
@@ -32,6 +34,9 @@ export class PreloadScene extends Phaser.Scene {
     queueAssets(this.load);
   }
   create() {
-    if (!this.failed) this.scene.start(gameConfig.startScene);
+    if (this.failed) return;
+    this.app.ready = true;
+    this.app.onState();
+    this.scene.start(gameConfig.startScene);
   }
 }

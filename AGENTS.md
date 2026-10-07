@@ -1,7 +1,7 @@
 # Phaser web template
 
-게임 규칙·저장 schema·asset 목록은 `src/game/`에, 이름·기능 스위치는 `src/config/game.ts`에 둔다.
-`src/main.ts`와 `src/app.ts`는 구성 지점이다. `src/core/`와 `src/services/`는 게임 간 재사용 경계다.
+게임 규칙·저장 schema·진행 상태·asset 목록은 `src/game/`에, 이름·해상도·기능 스위치는 `src/config/game.ts`에 둔다.
+`src/main.ts`와 `src/app.ts`는 구성 지점이다. `src/core/`와 `src/services/`는 게임 간 재사용 경계이며 `src/game/`이나 데모 asset 키를 import하지 않는다.
 데모 UI인 `src/ui/Shell.ts`는 파생 게임에 맞게 교체할 수 있다.
 
 - 공통 API/수명/저장/서비스를 수정할 때 [구조 계약](docs/ARCHITECTURE.md)을 먼저 읽는다.
