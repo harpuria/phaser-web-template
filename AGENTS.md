@@ -11,8 +11,3 @@
 - 실제 광고·결제 SDK는 Adapter로 감싼다. production에서 Mock 성공을 실제 거래/보상으로 사용하지 않는다.
 - 검증은 `npm run check`, 관련 UI 변경은 `npm run test:e2e`로 수행한다. 배포 서비스 변경은 build 후 `E2E_PREVIEW=1 npm run test:e2e`도 수행한다.
 - 실제 실행한 검사와 미검증 브라우저/기기를 구분해 보고한다.
-
-## Shell commands
-
-명령은 `rtk`로 시작한다. 지원되지 않는 명령은 `rtk proxy <command>`로 실행한다.
-예: `rtk npm run check`, `rtk proxy npx playwright test`, `rtk rg --files`.
