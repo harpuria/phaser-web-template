@@ -4,17 +4,17 @@
 
 예제(별 모으기)는 사용법을 보여주기 위한 것입니다. 아래 순서로 바꾸면 공통 기능을 그대로 쓰면서 데모를 걷어낼 수 있습니다.
 
-| 순서 | 파일                         | 할 일                                                                                       |
-| ---- | ---------------------------- | ------------------------------------------------------------------------------------------- |
-| 1    | `src/config/game.ts`         | `title`, `storagePrefix`, 해상도, `pixelArt`, `orientation`, `startScene`, `pausableScenes` |
-| 2    | `package.json`, `index.html` | package 이름, `<title>`·description·`theme-color`, `public/favicon.svg`                     |
-| 3    | `src/game/assets.ts`         | `assetKeys`와 `queueAssets`를 내 asset으로 교체, `public/assets/demo/` 삭제                 |
-| 4    | `src/game/save.ts`           | 저장 schema(처음이면 version 1부터)                                                         |
-| 5    | `src/game/session.ts`        | 저장하지 않는 진행 상태(`Mode`, 점수 등)와 규칙 값                                          |
-| 6    | `src/game/scenes.ts`         | 내 장면으로 교체. 파일을 나눠도 됩니다                                                      |
-| 7    | `src/main.ts`                | `scene` 목록에 내 장면 등록(Boot, Preload는 맨 앞에 유지)                                   |
-| 8    | `src/ui/Shell.ts`            | HTML 메뉴/HUD를 게임에 맞게 교체하거나 삭제(아래 참고)                                      |
-| 9    | `tests/e2e/`                 | 데모 흐름 검사를 내 게임 흐름으로 교체. `tests/unit/`의 공통 검사는 유지                    |
+| 순서 | 파일                         | 할 일                                                                                                         |
+| ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 1    | `src/config/game.ts`         | `title`, `storagePrefix`, 해상도, `pixelArt`, `orientation`, `maxRenderScale`, `startScene`, `pausableScenes` |
+| 2    | `package.json`, `index.html` | package 이름, `<title>`·description·`theme-color`, `public/favicon.svg`                                       |
+| 3    | `src/game/assets.ts`         | `assetKeys`와 `queueAssets`를 내 asset으로 교체, `public/assets/demo/` 삭제                                   |
+| 4    | `src/game/save.ts`           | 저장 schema(처음이면 version 1부터)                                                                           |
+| 5    | `src/game/session.ts`        | 저장하지 않는 진행 상태(`Mode`, 점수 등)와 규칙 값                                                            |
+| 6    | `src/game/scenes.ts`         | 내 장면으로 교체. 파일을 나눠도 됩니다                                                                        |
+| 7    | `src/main.ts`                | `scene` 목록에 내 장면 등록(Boot, Preload는 맨 앞에 유지)                                                     |
+| 8    | `src/ui/Shell.ts`            | HTML 메뉴/HUD를 게임에 맞게 교체하거나 삭제(아래 참고)                                                        |
+| 9    | `tests/e2e/`                 | 데모 흐름 검사를 내 게임 흐름으로 교체. `tests/unit/`의 공통 검사는 유지                                      |
 
 **Shell을 삭제할 때**: Phaser가 들어갈 `<div id="game">`과 크기를 가진 부모를 `index.html`에 직접 만들고,
 전체화면을 쓰면 `main.ts`의 `fullscreenTarget`(기본 `'stage'`)도 그 요소 id로 맞춥니다.
@@ -42,7 +42,9 @@ export class MyGame extends Phaser.Scene {
   }
   create() {
     centerSafeArea(this, gameConfig.width, gameConfig.height); // 화면 크기와 전체화면 참고
-    this.player = this.physics.add.image(100, 100, assetKeys.player);
+    this.player = this.physics.add
+      .image(100, 100, assetKeys.player)
+      .setScale(1 / this.app.renderScale); // 렌더 배율만큼 크게 불러온 텍스처
     this.controls = new MoveInput(this);
     this.app.audio?.playMusic(assetKeys.music);
     if (this.app.pause.paused) this.scene.pause(); // 일시정지 중에 시작된 경우
@@ -73,6 +75,7 @@ load.atlas('ui', 'ui.png', 'ui.json'); // TexturePacker 등에서 만든 atlas
 load.bitmapFont('pixel', 'pixel.png', 'pixel.xml');
 ```
 
+- **렌더 배율(k)**: 고해상도 화면에서는 게임을 k배로 그립니다(아래 '렌더 배율'). 선명하게 보이려면 텍스처도 k배로 준비합니다. SVG는 `queueAssets`처럼 크기에 `k`를 곱해 불러오고, PNG는 @2x 원본을 쓴 뒤 장면에서 `setScale(1 / k)`로 줄입니다. 물리 원/사각형 크기는 텍스처 화소 기준이므로 `setCircle(r * k)`처럼 k를 곱합니다.
 - 도트 그래픽이면 `gameConfig.pixelArt`를 `true`로 둡니다. 확대해도 흐려지지 않습니다.
 - 웹 글꼴을 Phaser 텍스트에 쓰면 글꼴이 로드되기 전에 그려질 수 있습니다. `document.fonts.load('16px MyFont')`를 기다린 뒤 장면을 시작하거나 bitmap font를 씁니다.
 - 필수 asset 하나라도 실패하면 Preload가 다음 장면으로 넘어가지 않고 안내를 띄웁니다.
@@ -158,11 +161,20 @@ HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
 - 게임 카드(제목 줄 + 캔버스 + 버튼 줄)는 화면 높이를 넘지 않게 줄어들고(`--stage-chrome`), 플레이를 시작하면 카드 전체가 보이도록 스크롤합니다.
 - 세로 게임은 `width: 540, height: 960, orientation: 'portrait'`로 바꿉니다. 안내 문구와 전체화면 회전 안내도 이 값을 따릅니다.
 - 전체화면 버튼은 지원 브라우저에서만 보입니다(iPhone Safari는 미지원). 전체화면에서는 게임이 화면 전체로 늘어나고, 권장 방향이 아니면 회전 안내가 뜹니다.
-- 고해상도(레티나) 화면에서는 960×540으로 그린 결과를 늘리므로 다소 흐릴 수 있습니다. 선명도가 중요하면 기본 해상도를 높이거나 Text의 `resolution`을 올립니다.
+
+### 렌더 배율
+
+고해상도(레티나·휴대폰) 화면에서 흐려지지 않도록, 게임은 `안전 영역 × k` 화소로 그리고 카메라를 k배 zoom합니다. 장면 좌표는 그대로 960×540 단위입니다.
+
+- k는 시작할 때 한 번 정합니다: `devicePixelRatio × 화면에 안전 영역이 들어가는 배율`을 0.25 단위로 반올림, 1 이상 `gameConfig.maxRenderScale` 이하(`src/core/renderScale.ts`).
+- 기본 상한은 PC 2, 터치 기기 1.5입니다. GPU가 칠하는 화소는 k의 제곱(1.5면 2.25배, 2면 4배)으로 늘어납니다.
+- `centerSafeArea`를 부른 장면에서는 이후 추가되는 Text가 자동으로 k배 해상도로 그려집니다. Graphics(선·도형)는 원래 선명합니다.
+- 저가 휴대폰에서 프레임이 떨어지면 `maxRenderScale.mobile`을 1.25나 1로 낮춥니다. 개발 서버에서 `?debug`를 붙이면 게임 화면 왼쪽 위에 `render ×k · fps`가 표시됩니다. 같은 Wi-Fi의 휴대폰에서 Network 주소에 `?debug`를 붙여 확인하세요.
+- k는 전체화면 크기를 기준으로 정하므로, 페이지 안의 작은 게임 화면에서는 실제 표시보다 크게 그리기도 합니다(예: PC 1920×1080에서 k=2, 표시 폭 약 1062px).
 
 ## 디버그와 오류
 
-- 개발 서버 주소에 `?debug`를 붙이면 Arcade 물리 충돌 영역이 보입니다. 배포 빌드에서는 무시됩니다.
+- 개발 서버 주소에 `?debug`를 붙이면 Arcade 물리 충돌 영역과 렌더 배율·FPS가 보입니다. 배포 빌드에서는 무시됩니다.
 - `?round=5`처럼 붙이면 예제 한 판을 5초로 줄입니다(E2E에서 사용). 실제 게임의 조정값이 보상·랭킹에 영향을 준다면 `import.meta.env.DEV`일 때만 읽도록 합니다.
 - 처리되지 않은 오류와 Promise 거부는 게임 화면 위에 안내와 새로고침 버튼으로 표시됩니다. 콘솔 출력은 그대로 남습니다.
 

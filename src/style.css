@@ -210,6 +210,18 @@ h2 {
   font-weight: 400;
   color: #94a3b8;
 }
+#debug-info {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #000a;
+  color: #a3e635;
+  font: 11px monospace;
+  pointer-events: none;
+}
 #error-overlay {
   z-index: 2;
   pointer-events: auto;

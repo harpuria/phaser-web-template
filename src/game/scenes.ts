@@ -51,8 +51,12 @@ export class MenuScene extends Phaser.Scene {
         color: '#94a3b8',
       })
       .setOrigin(0.5);
-    const player = this.add.image(cx, 363, assetKeys.player).setScale(1.7);
-    [cx - 120, cx + 120].forEach((x) => this.add.image(x, 363, assetKeys.star));
+    // 텍스처는 렌더 배율(k)만큼 크게 불러왔으므로 1/k로 줄여 원래 크기에 맞춘다.
+    const k = this.app.renderScale;
+    const player = this.add.image(cx, 363, assetKeys.player).setScale(1.7 / k);
+    [cx - 120, cx + 120].forEach((x) =>
+      this.add.image(x, 363, assetKeys.star).setScale(1 / k),
+    );
     if (!this.app.settings.data.reducedMotion)
       this.tweens.add({
         targets: player,
@@ -87,14 +91,17 @@ export class GameScene extends Phaser.Scene {
     this.app.session.mode = 'playing';
     this.app.onState();
     background(this);
+    const k = this.app.renderScale;
     this.physics.world.setBounds(46, 82, W - 92, H - 134);
     this.player = this.physics.add
       .image(W / 2, 300, assetKeys.player)
-      .setCircle(23, 3, 3)
+      .setScale(1 / k)
+      .setCircle(23 * k, 3 * k, 3 * k) // 원 크기는 텍스처 화소 기준
       .setCollideWorldBounds(true);
     this.star = this.physics.add
       .image(650, 300, assetKeys.star)
-      .setCircle(17, 1, 1)
+      .setScale(1 / k)
+      .setCircle(17 * k, k, k)
       .setImmovable(true);
     this.physics.add.overlap(this.player, this.star, () => this.collect());
     this.label = this.add.text(52, 44, '', {

@@ -17,6 +17,8 @@ for (const [name, width, height, touch] of viewports) {
     const context = await browser.newContext({
       viewport: { width, height },
       isMobile: touch,
+      // 휴대폰·태블릿은 고밀도 화면으로 렌더 배율(상한 1.5) 경로까지 검사한다.
+      deviceScaleFactor: touch ? 3 : 1,
       hasTouch: touch,
     });
     const page = await context.newPage();
@@ -40,7 +42,9 @@ for (const [name, width, height, touch] of viewports) {
       return {
         cardInView: inView(card),
         // CSS 픽셀 / 게임 단위. 안전 영역(960×540)이 실제로 그려지는 배율.
-        scale: box.width / canvas.width,
+        scale:
+          box.width /
+          (canvas.width / Number(canvas.parentElement!.dataset.renderScale)),
         horizontalScroll: document.documentElement.scrollWidth > innerWidth,
         rotateTip: (() => {
           const tip = document.querySelector('.rotate-tip');
@@ -48,6 +52,11 @@ for (const [name, width, height, touch] of viewports) {
         })(),
       };
     });
+    const renderScale = Number(
+      await page.locator('#game').getAttribute('data-render-scale'),
+    );
+    expect(renderScale).toBeGreaterThanOrEqual(1);
+    expect(renderScale).toBeLessThanOrEqual(touch ? 1.5 : 2);
     expect(layout.cardInView).toBe(true);
     expect(layout.horizontalScroll).toBe(false);
     const portraitPhone = touch && width < 600 && height > width;
