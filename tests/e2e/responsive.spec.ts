@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { disableSdk } from './platform-fixtures';
 
 // [name, width, height, touch]. 화면 크기만 바꾸면 되므로 desktop 프로젝트에서만 실행한다.
 const viewports = [
@@ -22,6 +23,7 @@ for (const [name, width, height, touch] of viewports) {
       hasTouch: touch,
     });
     const page = await context.newPage();
+    await disableSdk(page);
     await page.goto('/');
     const play = page.getByRole('button', { name: '플레이 시작' });
     await expect(play).toBeEnabled();

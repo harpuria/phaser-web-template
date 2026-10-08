@@ -19,5 +19,15 @@ export const gameConfig = {
   pausableScenes: ['Game'],
   autosaveMs: 15_000,
   transitionMs: 180,
-  services: { mock: true, ads: true, billing: true, analytics: true },
+  services: {
+    mock: true,
+    ads: true,
+    billing: true,
+    analytics: true,
+    crazyGames: {
+      enabled: true,
+      /** Full Launch 승인 후 'full'로 변경. local 환경은 데모 광고를 허용한다. */
+      launch: 'basic' as 'basic' | 'full',
+    },
+  },
 } as const;

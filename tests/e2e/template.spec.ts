@@ -1,4 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { disableSdk } from './platform-fixtures';
+
+// The standalone contract stays deterministic without external SDK/network access.
+test.beforeEach(async ({ page }) => {
+  await disableSdk(page);
+});
 
 test('play, pause, settings, save, restart, and menu navigation', async ({
   page,

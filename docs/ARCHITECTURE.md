@@ -15,7 +15,9 @@ src/core/                 게임과 무관하게 재사용하는 코드
   screen.ts viewport.ts     전체화면/방향 고정, EXPAND 안전 영역 카메라·zoom
   renderScale.ts            고해상도 화면용 렌더 배율 계산(Phaser 없는 순수 함수)
   errors.ts                 처리되지 않은 오류 감시
-src/services/platform.ts  광고·결제·분석 계약, Mock, unavailable
+src/services/platform.ts  광고·결제·분석 계약, capability gate, Mock, unavailable
+src/services/bootstrap.ts SDK 초기화와 저장소 선택 (App 생성 전에 완료)
+src/services/crazygames*   CrazyGames v3 타입·로더·Adapter
 src/scenes/               공통 Boot / Preload
 src/game/                 게임 전용: 장면, 저장 schema, 진행 상태(session), asset 목록
 src/ui/Shell.ts           예제 HTML 메뉴/HUD/설정/서비스 패널 (교체 대상)
@@ -39,12 +41,12 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 
 ## 시작과 정리
 
-1. `main.ts`가 `App`과 `Shell`을 만들고 처리되지 않은 오류 감시를 시작합니다.
+1. `main.ts`가 `createPlatform()`으로 SDK 초기화와 저장소 선택을 기다린 뒤 `App`과 `Shell`을 만들고 오류 감시를 시작합니다.
 2. `BootScene`이 `app.attach(game)`으로 오디오, 탭 숨김/pagehide 처리, 자동 저장 타이머를 연결합니다.
-3. `PreloadScene`이 게임의 `queueAssets`로 asset을 불러오며 진행률을 표시합니다.
-   하나라도 실패하면 안내를 띄우고 멈춥니다. 모두 성공하면 `app.ready = true` 후 `startScene`으로 넘어갑니다.
+3. `PreloadScene`이 `loadingStart`를 알리고 게임의 `queueAssets`로 asset을 불러오며 진행률을 표시합니다.
+   하나라도 실패하면 안내를 띄우고 멈춥니다. 모두 성공하면 `loadingStop`, `app.ready = true` 후 `startScene`으로 넘어갑니다.
 4. 장면 전환은 `transition()`이 registry lock으로 중복 요청을 막고, 장면 shutdown 때 lock을 풉니다.
-5. HMR 때는 오류 감시, HTML listener, 타이머, 오디오, Phaser 게임을 순서대로 정리합니다.
+5. HMR 때는 오류 감시, HTML listener, 타이머, SDK listener·진행 중 요청, 오디오, Phaser 게임을 정리합니다. SDK 초기화 도중 dispose되면 게임을 만들지 않습니다.
 
 `App`은 장면이 바뀌어도 유지됩니다. 물리·게임 객체·입력 키는 Phaser 장면 수명을 따릅니다.
 
@@ -52,6 +54,8 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 
 `PauseState`는 이유를 집합으로 보관하고, 모든 이유가 사라질 때만 재개합니다. 그래서 탭 복귀가 수동 정지를 풀지 않습니다.
 일시정지 동안 `gameConfig.pausableScenes`의 장면과 오디오를 멈춥니다. 메뉴 연출처럼 멈출 필요 없는 장면은 목록에서 뺍니다.
+광고 `service` 이유만 있을 때는 장면만 멈추고 `adStarted`부터 음소거합니다. 플랫폼 음소거는 사용자 설정과 별도로 보관합니다.
+`PauseState`의 두 번째 callback은 이유가 바뀔 때마다 실행되어 숨김 상태에서 수동 정지를 추가해도 gameplay 이벤트가 반영됩니다.
 수동 토글(버튼·Escape)은 `has('manual')`을 기준으로 해서 다른 이유로 멈춘 동안에도 의도대로 동작합니다.
 
 ## 저장
@@ -69,6 +73,7 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 
 - 실패 상태에서도 `update`는 메모리 값을 바꾸지만 `false`를 반환합니다.
 - 원본을 지우는 것은 사용자가 확인한 `reset()`뿐입니다. 게임 저장과 설정은 다른 키라서 서로 지우지 않습니다.
+- 저장소는 생성 시 주입합니다. CrazyGames local/실환경은 SDK Data, SDK disabled/명시적 비활성화는 localStorage, SDK 초기화 실패는 쓰기 불가입니다. Data 실패 후 localStorage로 전환하지 않습니다.
 - localStorage는 origin(도메인·포트)별·브라우저별로 분리됩니다. 새 게임은 `storagePrefix`를 바꿔 같은 도메인의 다른 게임과 충돌을 피합니다.
 - 여러 탭은 마지막 쓰기가 이깁니다. 암호화·부정행위 방지·서버 동기화가 없으므로 실제 화폐/권한의 원본으로 쓰지 않습니다.
 
@@ -83,13 +88,16 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 
 ## 서비스
 
-`PlatformAdapter`는 광고·구매·분석 호출의 교체 지점입니다. 현재 구현은 개발용 `MockAdapter`와 `UnavailableAdapter`뿐입니다.
-`PlatformServices`가 gate(기능 스위치, 동의, 동시 요청)와 오류 변환을 담당합니다.
-Mock 완료 결과에는 `mock: true`가 붙고, 게임 재화/권한을 자동 지급하지 않습니다. Mock 동의는 세션 메모리에만 있습니다.
+`PlatformAdapter`는 광고·구매·분석·플레이 이벤트의 교체 지점입니다. `CrazyGamesAdapter`, 개발용 `MockAdapter`, `UnavailableAdapter`가 있습니다.
+`PlatformServices`가 gate(기능 스위치, capability, Mock 동의, 동시 요청)와 오류 변환을 담당합니다. 실제 CrazyGames 호출에 Mock 동의를 요구하지 않습니다.
+완료 결과는 `{ status: 'completed', mock: boolean }`입니다. 실제 CrazyGames 광고만 `mock: false`이며 local SDK와 Mock은 `true`입니다. 보상 규칙은 게임에서 처리합니다.
+`app.setGameplay()`는 조작 가능한 플레이 상태를 받고, 의도적 정지·광고 중단과 합쳐 SDK 이벤트를 보냅니다. 탭 숨김만으로는 gameplayStop을 보내지 않습니다.
+광고는 요청부터 UI/게임을 멈추고 실제 시작 callback부터 음소거하며, 종료·실패 때 광고 이유만 해제합니다. Adapter는 timeout·중복/늦은 callback·destroy 시 취소를 처리합니다.
+Basic Launch는 광고 capability를 끕니다(local 데모 제외). 지원하지 않는 결제와 자체 분석은 unavailable/false입니다. 설정과 제출 방법은 [CrazyGames 안내](CRAZYGAMES.md)를 봅니다.
 
 실제 Adapter 도입 시:
 
-1. 별도 파일에서 SDK를 감싸고, 배포용 선택 경로를 `PlatformServices`에 추가합니다. `isMock` gate도 실제 준비 상태 판정으로 바꿉니다.
+1. 별도 파일에서 SDK를 감싸고, `bootstrap.ts` 선택 경로와 준비 상태에 따른 capability를 추가합니다.
 2. 광고 완료 callback, 구매 서버 검증·중복 처리·pending·복원 정책을 정합니다.
 3. 취소/실패/동의 철회/timeout/중복 callback을 검사합니다. 끝나지 않는 Promise에는 timeout과 요청 ID를 둡니다.
 4. SDK 버전·약관·검증 결과를 [의존성](DEPENDENCIES.md)에 기록합니다.

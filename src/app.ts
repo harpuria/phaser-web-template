@@ -2,37 +2,35 @@ import type Phaser from 'phaser';
 import { gameConfig } from './config/game';
 import { AudioService } from './core/audio';
 import { PauseState } from './core/pause';
-import { settingsSchema } from './core/settings';
+import { settingsSchema, type Settings } from './core/settings';
+import { Store } from './core/store';
+import { progressSchema, type Progress } from './game/save';
 import { chooseRenderScale } from './core/renderScale';
-import { browserStorage, Store } from './core/store';
-import { progressSchema } from './game/save';
 import { Session } from './game/session';
-import { PlatformServices } from './services/platform';
+import type { PlatformContext } from './services/bootstrap';
 
 export class App {
-  readonly save = new Store(
-    browserStorage(),
-    `${gameConfig.storagePrefix}:save`,
-    progressSchema,
+  readonly save: Store<Progress>;
+  readonly settings: Store<Settings>;
+  readonly platform;
+  readonly storageKind;
+  readonly platformWarning;
+  readonly pause = new PauseState(
+    (paused) => {
+      for (const key of gameConfig.pausableScenes) {
+        if (paused && this.game?.scene.isActive(key))
+          this.game.scene.pause(key);
+        else if (!paused && this.game?.scene.isPaused(key))
+          this.game.scene.resume(key);
+      }
+    },
+    () => {
+      // An ad request blocks controls; audio is muted only once the ad starts.
+      this.audio?.suspend(this.pause.hasOtherThan('service'));
+      this.syncGameplay();
+      this.onState();
+    },
   );
-  readonly settings = new Store(
-    browserStorage(),
-    `${gameConfig.storagePrefix}:settings`,
-    settingsSchema(matchMedia('(prefers-reduced-motion: reduce)').matches),
-  );
-  readonly platform = new PlatformServices({
-    ...gameConfig.services,
-    development: import.meta.env.DEV,
-  });
-  readonly pause = new PauseState((paused) => {
-    for (const key of gameConfig.pausableScenes) {
-      if (paused && this.game?.scene.isActive(key)) this.game.scene.pause(key);
-      else if (!paused && this.game?.scene.isPaused(key))
-        this.game.scene.resume(key);
-    }
-    this.audio?.suspend(paused);
-    this.onState();
-  });
   /** 렌더 배율. 게임은 기본 해상도 × 이 값으로 그리고 카메라 zoom으로 맞춘다. 시작 시 한 번 정한다. */
   readonly renderScale = chooseRenderScale({
     dpr: window.devicePixelRatio || 1,
@@ -57,10 +55,48 @@ export class App {
   fatalError = '';
   onState = () => {};
   private cleanup: (() => void)[] = [];
+  private playing = false;
+
+  constructor(context: PlatformContext) {
+    this.platform = context.platform;
+    this.storageKind = context.storageKind;
+    this.platformWarning = context.warning;
+    this.save = new Store(
+      context.storage,
+      `${gameConfig.storagePrefix}:save`,
+      progressSchema,
+    );
+    this.settings = new Store(
+      context.storage,
+      `${gameConfig.storagePrefix}:settings`,
+      settingsSchema(matchMedia('(prefers-reduced-motion: reduce)').matches),
+    );
+    this.platform.onAdState = (state) => {
+      this.audio?.setExternalMute('advertisement', state === 'playing');
+      this.pause.set('service', state !== 'idle');
+    };
+  }
+
+  /** Scenes report controllable gameplay, independent of the demo's session model. */
+  setGameplay(active: boolean) {
+    this.playing = active;
+    this.syncGameplay();
+  }
+  private syncGameplay() {
+    // CrazyGames handles visibility/focus itself; only intentional breaks are reported.
+    this.platform.setGameplay(
+      this.playing && !this.pause.hasOtherThan('hidden'),
+    );
+  }
 
   attach(game: Phaser.Game) {
     this.game = game;
     this.audio = new AudioService(game.sound, this.settings.data);
+    this.cleanup.push(
+      this.platform.listenMute((muted) =>
+        this.audio?.setExternalMute('platform', muted),
+      ),
+    );
     const visibility = () => {
       if (document.hidden) this.flush();
       this.pause.set('hidden', document.hidden);
@@ -87,6 +123,7 @@ export class App {
   destroy() {
     this.flush();
     this.cleanup.forEach((fn) => fn());
+    this.platform.destroy();
     this.audio?.destroy();
   }
 }

@@ -1,5 +1,12 @@
 # 변경 기록
 
+## 미배포 — 2026-10-07
+
+- CrazyGames HTML5 SDK v3 로더·초기화·환경 감지·Adapter 추가. SDK 준비 후 저장소 생성, loading/gameplay 이벤트와 platform mute 설정 연결.
+- Basic Launch 기본값과 Full Launch 광고 전환 설정. midgame/rewarded, 광고 요청 중 조작 차단·시작 시 음소거, 실패/timeout/중복 callback·정리 처리.
+- SDK Data를 진행·설정 저장에 사용. 읽기/초기화 실패 후 다른 저장소에 쓰지 않고 원본 보호. local SDK 광고는 `mock: true`, 실제 광고는 `false`.
+- SDK 경계 단위·브라우저 검사와 제출/Progress Save/검증 안내 추가.
+
 ## 0.3.0 — 2026-10-07
 
 - 화면 비율 대응: `Scale.FIT` → `Scale.EXPAND`. 기본 해상도는 안전 영역으로 두고 `core/viewport.ts`의 `centerSafeArea`로 화면 중앙에 맞춤. 남는 공간은 배경으로 채움.

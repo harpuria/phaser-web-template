@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Settings } from './settings';
 
 /** 음량 설정과 일시정지를 Phaser sound manager에 적용한다. asset 키는 게임이 넘긴다. */
@@ -6,6 +6,7 @@ export class AudioService {
   private music?: Phaser.Sound.BaseSound;
   private musicKey?: string;
   private suspended = false;
+  private externalMutes = new Set<string>();
   constructor(
     private sound: Phaser.Sound.BaseSoundManager,
     private settings: Readonly<Settings>,
@@ -15,11 +16,18 @@ export class AudioService {
 
   apply(settings: Readonly<Settings>) {
     this.settings = settings;
-    this.sound.mute = settings.muted || this.suspended;
+    this.sound.mute =
+      settings.muted || this.suspended || this.externalMutes.size > 0;
     this.sound.volume = settings.master;
     if (this.music && 'setVolume' in this.music) {
       (this.music as Phaser.Sound.WebAudioSound).setVolume(settings.music);
     }
+  }
+  /** Platform/ad muting takes priority without changing the user's saved choice. */
+  setExternalMute(reason: string, muted: boolean) {
+    if (muted) this.externalMutes.add(reason);
+    else this.externalMutes.delete(reason);
+    this.apply(this.settings);
   }
   /** 반복 재생할 배경음. 다른 키를 넘기면 이전 곡을 정리하고 바꾼다. */
   playMusic(key: string) {

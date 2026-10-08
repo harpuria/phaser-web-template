@@ -10,6 +10,7 @@ export class PreloadScene extends Phaser.Scene {
     super('Preload');
   }
   preload() {
+    this.app.platform.loadingStart();
     const { width, height } = gameConfig;
     centerSafeArea(this, width, height);
     const label = this.add
@@ -37,6 +38,7 @@ export class PreloadScene extends Phaser.Scene {
   }
   create() {
     if (this.failed) return;
+    this.app.platform.loadingStop();
     this.app.ready = true;
     this.app.onState();
     this.scene.start(gameConfig.startScene);

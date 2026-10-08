@@ -25,6 +25,7 @@ export class MenuScene extends Phaser.Scene {
   }
   create() {
     const cx = W / 2;
+    this.app.setGameplay(false);
     this.app.session.mode = 'menu';
     this.app.onState();
     background(this);
@@ -112,6 +113,10 @@ export class GameScene extends Phaser.Scene {
     this.controls = new MoveInput(this);
     this.app.audio?.playMusic(assetKeys.music);
     this.cameras.main.fadeIn(this.app.transitionMs);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      this.app.setGameplay(false),
+    );
+    this.app.setGameplay(true);
     if (this.app.pause.paused) this.scene.pause();
   }
   private collect() {
@@ -139,6 +144,7 @@ export class GameScene extends Phaser.Scene {
     if (this.ended) return;
     const score = this.app.session.score;
     this.ended = true;
+    this.app.setGameplay(false);
     this.player.setVelocity(0, 0);
     this.app.save.update((data) => ({
       best: Math.max(data.best, score),
@@ -173,6 +179,8 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(11);
+    // A natural break. Basic Launch is gated; SDK cooldown/unfilled errors are recoverable.
+    if (!this.app.platform.isMock) void this.app.platform.midgame();
   }
   goHome() {
     transition(this, 'Menu', this.app.transitionMs);

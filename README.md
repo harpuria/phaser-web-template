@@ -2,6 +2,7 @@
 
 Phaser로 데스크톱·모바일 웹 게임을 만드는 시작용 프로젝트입니다.
 저장, 설정, 오디오, 일시정지, 입력, 전체화면, 광고·결제 연결 지점처럼 매번 반복되는 준비를 미리 해 두었습니다.
+CrazyGames 입점을 위한 SDK v3 초기화·플레이 이벤트·광고 Adapter·Data 저장이 기본으로 연결되어 있습니다.
 
 **Phaser 4.2.1 · TypeScript · Vite · 템플릿 0.3.0** — 버전과 선택 근거는 [의존성](docs/DEPENDENCIES.md)에 있습니다.
 
@@ -30,10 +31,12 @@ npm run dev
 | 반응형 화면(EXPAND 안전 영역), 전체화면·회전 안내 | `src/core/viewport.ts`, `screen.ts`, `src/ui/Shell.ts` |
 | 처리되지 않은 오류 안내 화면                      | `src/core/errors.ts`                                   |
 | 광고·결제·분석 Adapter와 개발용 Mock              | `src/services/platform.ts`                             |
+| CrazyGames SDK v3, 플레이 이벤트·광고·Data 저장   | `src/services/crazygames.ts`, `bootstrap.ts`           |
 | 린트·포맷·타입·단위·브라우저 검사, CI             | `npm run check`, `npm run test:e2e`                    |
 
-Mock은 성공/취소/오류 흐름을 연습하는 용도이며 실제 광고·결제·보상은 없습니다. **배포 빌드에서는 서비스가 `unavailable`을 반환**합니다.
-실제 결제·광고·로그인 SDK, 서버 저장, PWA/offline은 포함하지 않습니다.
+CrazyGames는 Basic Launch 설정이 기본입니다. Full Launch 승인 후 광고를 켜고, 제출할 때 **Progress Save에서 SDK Data 사용을 선택**합니다.
+설정·광고 호출 예제·Preview 검증 절차는 [CrazyGames 안내](docs/CRAZYGAMES.md)에 있습니다.
+로컬 SDK 광고와 Mock은 실제 보상/결제가 아닙니다. 결제·로그인 UI·리더보드·PWA/offline은 포함하지 않습니다.
 
 ## 내 게임으로 바꾸기
 
@@ -59,5 +62,6 @@ npm run preview                 # dist를 로컬에서 확인
 | [개발 안내](docs/DEVELOPMENT.md)                                                   | 장면·asset·저장·입력 작업, 배포, 문제 해결     |
 | [구조와 계약](docs/ARCHITECTURE.md)                                                | `core/`·`services/`·`app.ts`를 고치기 전       |
 | [의존성](docs/DEPENDENCIES.md)                                                     | 버전을 올리거나 라이선스를 확인할 때           |
+| [CrazyGames SDK](docs/CRAZYGAMES.md)                                               | 플랫폼 설정, 광고·저장 연결, 제출 전 확인      |
 | [적용 절차](docs/template/APPLYING.md)                                             | 새 게임을 만들거나 템플릿 업데이트를 가져올 때 |
 | [변경 기록](docs/template/CHANGELOG.md) · [검증 기록](docs/template/VALIDATION.md) | 템플릿 자체의 이력                             |
