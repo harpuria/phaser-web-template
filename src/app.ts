@@ -3,6 +3,7 @@ import { gameConfig } from './config/game';
 import { AudioService } from './core/audio';
 import { PauseState } from './core/pause';
 import { settingsSchema } from './core/settings';
+import { chooseRenderScale } from './core/renderScale';
 import { browserStorage, Store } from './core/store';
 import { progressSchema } from './game/save';
 import { Session } from './game/session';
@@ -32,6 +33,19 @@ export class App {
     this.audio?.suspend(paused);
     this.onState();
   });
+  /** 렌더 배율. 게임은 기본 해상도 × 이 값으로 그리고 카메라 zoom으로 맞춘다. 시작 시 한 번 정한다. */
+  readonly renderScale = chooseRenderScale({
+    dpr: window.devicePixelRatio || 1,
+    screenWidth: screen.width,
+    screenHeight: screen.height,
+    baseWidth: gameConfig.width,
+    baseHeight: gameConfig.height,
+    coarse: matchMedia('(pointer: coarse)').matches,
+    max: gameConfig.maxRenderScale,
+  });
+  /** 개발 서버에서 `?debug`: 물리 충돌 영역과 렌더 배율·FPS 표시. 배포 빌드에서는 항상 false. */
+  readonly debug =
+    import.meta.env.DEV && new URLSearchParams(location.search).has('debug');
   /** 게임이 정의한 진행 중 상태(점수, 화면 모드 등). 저장하지 않는다. */
   readonly session = new Session();
   game?: Phaser.Game;

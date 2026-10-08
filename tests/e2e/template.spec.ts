@@ -23,6 +23,20 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
   await expect(page.locator('#pause-overlay')).toBeHidden();
   const canvas = page.locator('#game canvas');
   const box = (await canvas.boundingBox())!;
+  // EXPAND may widen the game; the 960×540 safe area stays centered inside it.
+  // Canvas pixels = game units × render scale (see core/renderScale.ts).
+  const k = Number(
+    await page.locator('#game').getAttribute('data-render-scale'),
+  );
+  const gameWidth =
+    (await canvas.evaluate((c: HTMLCanvasElement) => c.width)) / k;
+  const gameHeight =
+    (await canvas.evaluate((c: HTMLCanvasElement) => c.height)) / k;
+  const unit = box.width / gameWidth;
+  const toScreen = (x: number, y: number) => ({
+    x: box.x + (x + (gameWidth - 960) / 2) * unit,
+    y: box.y + (y + (gameHeight - 540) / 2) * unit,
+  });
   // Hold the input until the round ends. Round time and movement both use game
   // time, so a slow runner (where Phaser clamps frame delta) cannot miss the
   // star the way a fixed real-time hold could.
@@ -34,12 +48,7 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
     const touch = await page.context().newCDPSession(page);
     await touch.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [
-        {
-          x: box.x + (box.width * 650) / 960,
-          y: box.y + (box.height * 300) / 540,
-        },
-      ],
+      touchPoints: [toScreen(650, 300)],
     });
     await roundEnds();
     await touch.send('Input.dispatchTouchEvent', {

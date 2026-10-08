@@ -8,10 +8,6 @@ import { GameScene, MenuScene } from './game/scenes';
 import { Shell } from './ui/Shell';
 import './style.css';
 
-// 개발 서버에서 `?debug`를 붙이면 물리 충돌 영역을 표시한다. 배포 빌드에서는 항상 꺼진다.
-const debug =
-  import.meta.env.DEV && new URLSearchParams(location.search).has('debug');
-
 document.title = gameConfig.title;
 const app = new App();
 const shell = new Shell(app);
@@ -22,16 +18,18 @@ const stopWatchingErrors = watchUncaughtErrors((message) => {
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
-  width: gameConfig.width,
-  height: gameConfig.height,
+  // 렌더 배율만큼 크게 그리고, 각 장면의 카메라가 같은 배율로 zoom한다(core/viewport.ts).
+  width: gameConfig.width * app.renderScale,
+  height: gameConfig.height * app.renderScale,
   backgroundColor: gameConfig.background,
   pixelArt: gameConfig.pixelArt,
   scale: {
-    mode: Phaser.Scale.FIT,
+    // EXPAND: 화면 비율이 달라도 기본 해상도 영역을 모두 보이고 남는 공간은 배경으로 채운다.
+    mode: Phaser.Scale.EXPAND,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     fullscreenTarget: 'stage',
   },
-  physics: { default: 'arcade', arcade: { debug } },
+  physics: { default: 'arcade', arcade: { debug: app.debug } },
   input: {
     activePointers: 2,
     gamepad: true,

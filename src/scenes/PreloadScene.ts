@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { gameConfig } from '../config/game';
+import { centerSafeArea } from '../core/viewport';
 import { queueAssets } from '../game/assets';
 import type { App } from '../app';
 
@@ -9,7 +10,8 @@ export class PreloadScene extends Phaser.Scene {
     super('Preload');
   }
   preload() {
-    const { width, height } = this.scale;
+    const { width, height } = gameConfig;
+    centerSafeArea(this, width, height);
     const label = this.add
       .text(width / 2, height / 2, '준비 중… 0%', {
         fontFamily: 'sans-serif',
@@ -31,7 +33,7 @@ export class PreloadScene extends Phaser.Scene {
         '파일을 불러오지 못했습니다.\n새로고침해 다시 시도해 주세요.',
       );
     });
-    queueAssets(this.load);
+    queueAssets(this.load, this.app.renderScale);
   }
   create() {
     if (this.failed) return;

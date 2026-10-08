@@ -141,7 +141,7 @@ h2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px;
   gap: 22px;
-  align-items: stretch;
+  align-items: start;
 }
 .stage-card {
   border: 1px solid #2a3545;
@@ -180,6 +180,9 @@ h2 {
 #game {
   width: 100%;
   aspect-ratio: var(--game-w, 16) / var(--game-h, 9);
+  /* 게임 카드(제목 줄 + 버튼 줄)가 한 화면에 들어오도록 높이를 제한한다.
+     폭이 남으면 Phaser EXPAND가 좌우를 배경으로 채운다. */
+  max-height: calc(100dvh - var(--stage-chrome, 150px));
   position: relative;
   overflow: hidden;
   touch-action: none;
@@ -207,6 +210,18 @@ h2 {
   font-weight: 400;
   color: #94a3b8;
 }
+#debug-info {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #000a;
+  color: #a3e635;
+  font: 11px monospace;
+  pointer-events: none;
+}
 #error-overlay {
   z-index: 2;
   pointer-events: auto;
@@ -230,7 +245,9 @@ h2 {
   display: block;
 }
 #stage:fullscreen #game {
-  width: min(100%, calc(100dvh * var(--game-w) / var(--game-h)));
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
 }
 @media (orientation: portrait) {
   #stage:fullscreen[data-orientation='landscape'] #rotate-hint {
@@ -482,11 +499,6 @@ dialog .primary {
   justify-content: center;
   margin-top: 22px;
 }
-@media (min-width: 1400px) {
-  .canvas-wrap {
-    min-height: 465px;
-  }
-}
 @media (max-width: 1080px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 250px;
@@ -502,6 +514,16 @@ dialog .primary {
   }
   .stage-heading small {
     display: none;
+  }
+}
+/* 태블릿 세로·작은 노트북: 사이드바를 게임 아래로 내려 게임 폭을 넓힌다. */
+@media (max-width: 1024px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 @media (max-width: 800px) {
@@ -531,13 +553,6 @@ dialog .primary {
   }
   h1 {
     font-size: 28px;
-  }
-  .workspace {
-    grid-template-columns: 1fr;
-  }
-  .sidebar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
   .toolbox {
     padding: 20px;
@@ -586,9 +601,6 @@ dialog .primary {
   .stage-heading {
     padding: 0 14px;
   }
-  .canvas-wrap {
-    min-height: 190px;
-  }
   .service-actions {
     gap: 12px;
   }
@@ -609,6 +621,61 @@ dialog .primary {
   }
   .stats strong {
     font-size: 30px;
+  }
+}
+/* 휴대폰 가로처럼 높이가 낮은 화면: 게임 카드가 화면 높이를 모두 쓰고 버튼은 오른쪽 세로 줄로 옮긴다. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .header,
+  .intro,
+  .stage-heading {
+    display: none;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .stage-card {
+    flex-direction: row;
+    height: 100dvh;
+    border-radius: 0;
+    border-width: 0 1px;
+  }
+  .canvas-wrap {
+    min-width: 0;
+  }
+  #game {
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+  }
+  .game-toolbar {
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+    padding: 10px;
+    border-top: 0;
+    border-left: 1px solid #263144;
+  }
+  .game-toolbar p {
+    display: none;
+  }
+  .game-toolbar > div {
+    flex-direction: column;
+  }
+  .game-toolbar button {
+    padding: 10px 12px;
+  }
+}
+.rotate-tip {
+  display: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  [data-orientation='landscape'] .rotate-tip {
+    display: block;
+  }
+}
+@media (orientation: landscape) and (pointer: coarse) {
+  [data-orientation='portrait'] .rotate-tip {
+    display: block;
   }
 }
 @media (prefers-reduced-motion: reduce) {

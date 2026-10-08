@@ -12,7 +12,9 @@ src/core/                 게임과 무관하게 재사용하는 코드
   store.ts settings.ts      버전 있는 저장, 설정 schema
   audio.ts pause.ts         음량 적용, 이유별 일시정지
   input.ts navigation.ts    이동 입력 통합, 장면 전환
-  screen.ts errors.ts       전체화면/방향 고정, 처리되지 않은 오류 감시
+  screen.ts viewport.ts     전체화면/방향 고정, EXPAND 안전 영역 카메라·zoom
+  renderScale.ts            고해상도 화면용 렌더 배율 계산(Phaser 없는 순수 함수)
+  errors.ts                 처리되지 않은 오류 감시
 src/services/platform.ts  광고·결제·분석 계약, Mock, unavailable
 src/scenes/               공통 Boot / Preload
 src/game/                 게임 전용: 장면, 저장 schema, 진행 상태(session), asset 목록
@@ -75,7 +77,9 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 - `AudioService`는 master/mute를 sound manager에, music/sfx 음량을 각 sound에 적용합니다. asset 키는 호출하는 쪽이 넘깁니다.
 - BGM은 사용자 동작 이후 시작하고 일시정지 동안 멈춥니다. 설정을 바꾸면 즉시 반영합니다.
 - 입력은 Phaser world 좌표를 쓰고, 캔버스(`#game`)만 `touch-action: none`입니다. 키보드 이벤트는 `#game`에서만 받습니다.
-- 고정 논리 해상도 + `FIT`. 전체화면 대상은 캔버스와 오버레이를 감싼 `#stage`입니다.
+- `Scale.EXPAND` + 안전 영역(`gameConfig.width`×`height`). `core/viewport.ts`의 `centerSafeArea`가 카메라를 렌더 배율 k로 zoom하고, 화면 크기 변경 때마다 안전 영역 중앙에 맞춥니다.
+- 게임 화소 크기는 `안전 영역 × k`(`App.renderScale`, 시작 시 한 번 결정). 텍스처는 k배로 준비해 `1/k`로 줄여 씁니다.
+- 전체화면 대상은 캔버스와 오버레이를 감싼 `#stage`입니다.
 
 ## 서비스
 
