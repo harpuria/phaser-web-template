@@ -30,8 +30,7 @@ async function start() {
   const app = new App(context);
   const shell = new Shell(app);
   const stopWatchingErrors = watchUncaughtErrors((message) => {
-    app.fatalError = message;
-    app.onState();
+    app.fail(message);
   });
   const game = new Phaser.Game({
     type: Phaser.AUTO,

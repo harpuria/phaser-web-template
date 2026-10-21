@@ -202,3 +202,71 @@ test('failed SDK loading leaves a playable session without overwriting local pro
     await page.evaluate(() => localStorage.getItem('phaser-web-template:save')),
   ).toBe('original');
 });
+
+for (const kind of ['exception', 'rejection'] as const) {
+  test(`${kind} during gameplay stops the round, SDK events, and saving until reload`, async ({
+    page,
+  }) => {
+    await installSdk(page);
+    await page.goto('/?round=3');
+    await page.getByRole('button', { name: '플레이 시작' }).click();
+    await expect(page.locator('#mode-label')).toHaveText('PLAYING');
+    await page.evaluate((failure) => {
+      setTimeout(() => {
+        if (failure === 'rejection')
+          void Promise.reject(new Error('fatal review'));
+        else throw new Error('fatal review');
+      });
+    }, kind);
+    await expect(page.locator('#error-overlay')).toContainText('fatal review');
+    await expect(page.locator('#mode-label')).toHaveText('PAUSED');
+    for (const id of [
+      'play',
+      'pause',
+      'home',
+      'settings',
+      'reward',
+      'purchase',
+      'sound',
+      'fullscreen',
+    ]) {
+      await expect(page.locator('#' + id)).toBeDisabled();
+    }
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(3_500);
+    await expect(page.locator('#mode-label')).toHaveText('PAUSED');
+    await expect(page.locator('#rounds')).toHaveText('3');
+    expect(
+      (await events(page)).filter((event) => event.startsWith('gameplay')),
+    ).toEqual(['gameplayStart', 'gameplayStop']);
+    expect(
+      (await events(page)).filter((event) => event.startsWith('set:')),
+    ).toEqual([]);
+    await page.getByRole('button', { name: '새로고침' }).click();
+    await expect(page.locator('#mode-label')).toHaveText('MENU');
+    await expect(page.locator('#error-overlay')).toBeHidden();
+    await expect(
+      page.getByRole('button', { name: '플레이 시작' }),
+    ).toBeEnabled();
+  });
+}
+
+test('a fatal error closes settings so recovery remains accessible', async ({
+  page,
+}) => {
+  await installSdk(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await page.getByRole('button', { name: '설정 열기' }).click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+  await page.evaluate(() => {
+    setTimeout(() => {
+      throw new Error('fatal settings');
+    });
+  });
+  await expect(page.locator('#error-overlay')).toContainText('fatal settings');
+  await expect(page.locator('#settings-dialog')).not.toBeVisible();
+  await expect(page.locator('#mode-label')).toHaveText('PAUSED');
+  await page.getByRole('button', { name: '새로고침' }).click();
+  await expect(page.locator('#mode-label')).toHaveText('MENU');
+});

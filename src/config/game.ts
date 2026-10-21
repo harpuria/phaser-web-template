@@ -1,6 +1,11 @@
+import { resolvePlatformTarget } from './platform';
+
+const platform = resolvePlatformTarget(import.meta.env.VITE_PLATFORM);
+
 export const gameConfig = {
   title: 'Phaser Web Template',
   version: '0.3.0',
+  platform,
   storagePrefix: 'phaser-web-template', // 새 게임마다 고유한 값으로 변경
   width: 960,
   height: 540,
@@ -25,7 +30,7 @@ export const gameConfig = {
     billing: true,
     analytics: true,
     crazyGames: {
-      enabled: true,
+      enabled: platform === 'crazygames',
       /** Full Launch 승인 후 'full'로 변경. local 환경은 데모 광고를 허용한다. */
       launch: 'basic' as 'basic' | 'full',
     },

@@ -173,6 +173,7 @@ export class Shell {
       'keydown',
       (event) => {
         if (
+          app.fatalError ||
           event.code !== 'Escape' ||
           this.element<HTMLDialogElement>('settings-dialog').open ||
           app.session.mode !== 'playing'
@@ -198,6 +199,17 @@ export class Shell {
     ])
       this.element<HTMLButtonElement>(id).disabled = !app.ready || adPending;
     this.element<HTMLButtonElement>('reward').disabled ||= mode === 'playing';
+    if (app.fatalError) {
+      for (const control of this.root.querySelectorAll<
+        HTMLButtonElement | HTMLInputElement | HTMLSelectElement
+      >('button, input, select')) {
+        if (!['reload', 'exit-fullscreen'].includes(control.id))
+          control.disabled = true;
+      }
+      this.element('game').inert = true;
+      const dialog = this.element<HTMLDialogElement>('settings-dialog');
+      if (dialog.open) dialog.close();
+    }
     if (app.loadingError) this.notify(app.loadingError);
     this.element('best').textContent = String(app.save.data.best);
     this.element('rounds').textContent = String(app.save.data.rounds);

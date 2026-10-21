@@ -1,5 +1,40 @@
 # 검증 기록
 
+## 오류 정지·플랫폼별 빌드·공식 SDK 검사 — 2026-10-21 · macOS arm64 · Node 24.16.0
+
+| 검사                                            | 결과                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------- |
+| `npm run check`                                 | ESLint, Prettier, 단위 62개, TypeScript, Vite build 통과        |
+| `npm run test:e2e -- --workers=1`               | desktop + Pixel 7: 32개 통과, 8개 의도적 skip                   |
+| `E2E_PREVIEW=1 npm run test:e2e -- --workers=1` | 같은 구성으로 32개 통과, 8개 의도적 skip                        |
+| `npm run test:e2e:standalone`                   | 자체 호스팅용 배포 빌드: desktop + Pixel 7 2개 통과             |
+| `npm run test:sdk`                              | 공식 CDN SDK 3.8.0 local: 1개 통과, pageerror·console error 0건 |
+| 잘못된 플랫폼 값·명시 mode 충돌                 | 각각 실제 Vite build가 설정 로드 단계에서 거절하는 것 확인      |
+| CI 설정                                         | YAML 구문 검사 통과. 원격 GitHub Actions 실행은 미확인          |
+
+- 오류 E2E는 수정 전 `PAUSED` 대신 `PLAYING` → `RESULT`가 되는 것을 확인해 실패시켰습니다. 수정 후 예외·Promise 거부 각각에 대해 원래 판 길이 이후에도 정지·SDK gameplayStop·저장 미발생을 확인하고 새로고침으로 복구했습니다. 열린 설정창의 오류 복구와 광고 완료·탭 복귀 후 오류 정지 유지도 검사했습니다.
+- standalone은 실제 배포 빌드에서 SDK 요청을 차단하는 감시를 설치한 상태로 실행했습니다. SDK 요청 0건, 브라우저 로컬 저장·새로고침 복원, production 광고 unavailable을 확인했습니다.
+- 공식 SDK 검사는 다운로드를 대체하지 않았습니다. 초기화 버전 3.8.0, SDK 음소거가 사용자 설정·설정창 닫기 이후에도 실제 Web Audio master gain에 우선 적용되는 것, rewarded/midgame 각각의 시작·완료 callback, 조작 복구, gameplay 이벤트 쌍, Data 새로고침 복원을 확인했습니다.
+- 공식 SDK 결과는 `test-results/sdk/report.json`과 하위 artifact의 `sdk-observation.json`에 남습니다. 이번 CDN 파일의 SHA-256은 [의존성](../DEPENDENCIES.md)에 기록한 값과 같았습니다. 검사 빌드는 `test-results/builds/`에 만들어 배포용 `dist/`와 분리했습니다.
+- 브라우저는 Playwright 1.63.0의 Chromium 153.0.8010.12입니다. Pixel 7과 반응형 화면은 emulation이며, 의도적 skip은 기존 모바일 중복 반응형 7개와 키보드 Escape 1개입니다.
+- CrazyGames Preview/실환경 광고·계정 동기화, Safari/Firefox, 실제 Android/iPhone·GPU 성능·청음 확인은 미검증입니다. [점검 항목](REVIEW.md)의 1~3번을 반영했고 4번은 후속 작업으로 남깁니다.
+
+## CrazyGames SDK 최신 여부·템플릿 점검 — 2026-10-21 · macOS arm64 · Node 24.16.0
+
+| 검사                                            | 결과                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------- |
+| 공식 설치 문서·CDN·실행 로그                    | v3 공식 URL 유지, 실제 CDN 및 local 초기화 버전 3.8.0         |
+| `npm run check`                                 | ESLint, Prettier, 단위 52개, TypeScript, Vite build 통과      |
+| `npm run test:e2e -- --workers=1`               | desktop + Pixel 7: 26개 통과, 8개 의도적 skip                 |
+| `E2E_PREVIEW=1 npm run test:e2e -- --workers=1` | 같은 구성으로 26개 통과, 8개 의도적 skip                      |
+| 공식 CDN SDK를 사용하는 배포 빌드 local 실행    | 초기화, SDK 설정 조회, 로컬 광고 후 조작 복구, Data 저장 복원 |
+
+- 공식 문서가 안내하는 CDN 주소를 현재 로더가 이미 사용합니다. SDK 런타임 코드·npm 의존성·lockfile 교체 없이 최신 배포 파일을 불러오는 것을 확인했습니다. 버전·파일 식별값은 [의존성](../DEPENDENCIES.md)에 기록했습니다.
+- 자동 E2E는 SDK 테스트 대역을 사용합니다. 별도 임시 Playwright 실행은 SDK 다운로드를 대체하지 않고 Chromium 153.0.8010.12에서 공식 CDN의 local 환경을 확인했습니다. `muteAudio=true` SDK 설정 조회, rewarded/midgame 각각의 `adStarted`·`adFinished` callback, rewarded 완료의 Mock 표시, 광고 후 조작 복구, Data 저장·새로고침 복원을 확인했으며 이 경로의 pageerror는 0건입니다. 실제 음량을 듣는 검사는 포함하지 않았습니다.
+- 별도 오류 재현에서는 플레이 도중 예외가 발생해도 오류 안내 뒤에서 판이 종료되고 localStorage에 플레이 횟수가 저장되는 문제를 확인했습니다. 기존 오류 E2E는 메뉴의 안내 화면만 검사합니다. 개선 방향과 나머지 검토 결과는 [템플릿 점검](REVIEW.md)에 있습니다.
+- 모바일은 Pixel 7 화면·합성 touch emulation입니다. 의도적 skip 8개는 모바일 프로젝트에서 중복되는 반응형 7개와 키보드 Escape 1개입니다.
+- CrazyGames Preview/실환경 광고·계정 간 동기화, Safari/Firefox, Android/iPhone 실기기와 GPU 성능은 미검증입니다.
+
 ## 미배포 · CrazyGames SDK + 0.3.0 통합 — 2026-10-08 · macOS arm64 · Node 24.16.0
 
 | 검사                                            | 결과                                                              |

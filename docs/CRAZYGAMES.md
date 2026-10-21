@@ -3,6 +3,17 @@
 이 템플릿은 HTML5 SDK v3를 기본으로 초기화합니다. 설정은 `src/config/game.ts`의 `services.crazyGames`에 있습니다.
 게임은 SDK를 직접 호출하지 않고 `app.platform`을 사용합니다.
 
+## 배포 대상 선택
+
+| 대상        | 개발                     | 배포 빌드                  |
+| ----------- | ------------------------ | -------------------------- |
+| CrazyGames  | `npm run dev:crazygames` | `npm run build:crazygames` |
+| 자체 호스팅 | `npm run dev:standalone` | `npm run build:standalone` |
+
+기존 `npm run dev` / `build`는 CrazyGames가 기본입니다. `.env.local` 또는 실행 환경의 `VITE_PLATFORM=standalone` / `crazygames`로 기본 대상을 바꿀 수 있습니다.
+전용 명령은 Vite의 플랫폼 mode를 명시하며, 환경 변수와 충돌하거나 알 수 없는 값이 있으면 중단합니다. 예를 들어 `VITE_PLATFORM=standalone`을 설정했다면 CrazyGames 빌드 전에 이 값을 바꾸거나 제거합니다.
+선택 결과는 `src/config/game.ts`의 `platform`과 `services.crazyGames.enabled`에 반영됩니다. 별도 호스팅용 빌드는 SDK 장애와 관계없이 로컬 저장합니다.
+
 ## 환경과 실행
 
 | 환경                                | 동작                                                                         |
@@ -13,8 +24,8 @@
 | SDK 로드·초기화 실패 / 10초 초과    | 메모리로 플레이, 저장·광고 중지, 재시도 안내. 로컬·클라우드 원본을 쓰지 않음 |
 
 같은 네트워크의 휴대폰에서 IP 주소로 접속할 때는 `?useLocalSdk=true`로 SDK local 환경을 요청합니다.
-SDK 없이 개발하거나 다른 플랫폼용으로 배포하려면 `services.crazyGames.enabled = false`로 바꿉니다.
-실제 SDK는 `https://sdk.crazygames.com/crazygames-sdk-v3.js`에서 불러옵니다. 오프라인 개발은 SDK를 끄고 실행합니다.
+SDK 없이 개발하거나 다른 플랫폼용으로 배포하려면 standalone 명령을 씁니다.
+실제 SDK는 `https://sdk.crazygames.com/crazygames-sdk-v3.js`에서 불러옵니다. 오프라인 개발은 `npm run dev:standalone`으로 실행합니다.
 
 ## 장면과 일시정지
 
@@ -52,7 +63,7 @@ SDK `adFinished`만 완료로 취급합니다. `completed`만 확인하면 로�
 Data 읽기 실패·손상·미래 버전 데이터는 원본을 덮어쓰지 않습니다. CrazyGames에서 Data 실패 후 localStorage로 대체하지 않습니다.
 SDK가 disabled인 별도 호스팅에서만 기존 브라우저 저장을 씁니다.
 
-1. 새 게임의 `storagePrefix`, 장면과 asset을 교체하고 `npm run check` 및 두 E2E 모드를 실행합니다.
+1. 새 게임의 `storagePrefix`, 장면과 asset을 교체하고 `npm run check` 및 두 E2E 모드를 실행합니다. 제출할 최종 빌드는 `npm run build:crazygames`로 생성합니다.
 2. `dist/` 내용 전체를 zip으로 묶습니다. zip 루트에 `index.html`이 있어야 합니다. Vite `base: './'`로 번들 asset 경로는 상대 경로입니다.
 3. [Developer Portal](https://developer.crazygames.com/)에서 게임을 만들고 빌드를 올립니다.
 4. **Progress Save에서 `Yes, using the Data Module from the CrazyGames SDK`를 선택합니다.** 끄면 Data API가 오류를 내며 이 템플릿은 저장 보호 상태가 됩니다.
@@ -66,6 +77,11 @@ Data 저장 한도는 게임 전체 1MB입니다. `Store.flush()` 성공은 SDK�
 
 자동 검사는 SDK 경계의 테스트 대역으로 초기화 순서, 이벤트, 저장 보호, 광고 완료·오류·timeout·중복 callback을 확인합니다.
 이는 실제 광고 송출·수익·계정 동기화·입점 승인을 검증한 것이 아닙니다. 제출 게임의 Preview에서 확인해야 합니다.
+
+`npm run test:sdk`는 공식 CDN 파일을 그대로 사용하는 별도 검사입니다. CrazyGames용 배포 빌드를 `test-results/builds/sdk/`에 만들고 4176 포트에서 실행합니다. 일반 `dist/` 빌드와 독립적으로 동작하며, 외부 네트워크와 Playwright Chromium이 필요합니다.
+local 초기화, 사용자 설정 변경 후에도 유지되는 SDK 음소거, rewarded/midgame 데모의 실제 callback·조작 복구, gameplay 이벤트, Data 새로고침 복원을 확인합니다.
+`test-results/sdk/report.json`과 하위 artifact의 `sdk-observation.json`에 실행 시각·브라우저·SDK 실행 버전·HTTP 응답 식별값·파일 SHA-256·콘솔 오류·단계별 결과를 남깁니다. 실패 시에도 관찰 기록과 trace를 남기며, CDN 장애는 검사 실패로 보고합니다. 확인하는 SDK 버전은 고정하지 않습니다.
+GitHub Actions 수동 실행에서 `sdk_smoke`를 켜면 같은 검사를 실행하고 성공 결과도 artifact로 보관합니다. 일반 push/PR은 네트워크 독립적인 SDK 대역 검사를 사용합니다.
 
 - [SDK 설치·초기화·환경](https://docs.crazygames.com/sdk/intro/)
 - [Gameplay·loading·muteAudio](https://docs.crazygames.com/sdk/game/)

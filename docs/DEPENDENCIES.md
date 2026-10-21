@@ -1,6 +1,6 @@
 # 의존성과 출처
 
-확인일: 2026-10-04 (CI action·CrazyGames SDK는 2026-10-07). npm 전이 의존성은 `package-lock.json`이 기준입니다.
+확인일: npm 의존성 2026-10-04, CI action 2026-10-07, CrazyGames SDK 2026-10-21. npm 전이 의존성은 `package-lock.json`이 기준입니다.
 
 | 구성                 | 고정 버전            | 라이선스                   | 역할                  |
 | -------------------- | -------------------- | -------------------------- | --------------------- |
@@ -18,6 +18,10 @@
 npm 런타임 의존성은 Phaser 하나이고 나머지는 devDependencies입니다. CrazyGames는 외부 스크립트로 로드하며 npm 패키지/lockfile 변경은 없습니다.
 공식 설치 문서가 제공하는 `https://sdk.crazygames.com/crazygames-sdk-v3.js`로 URL과 major 버전을 고정했습니다.
 이 endpoint는 공급자가 갱신하므로 npm의 정확한 patch 고정과는 다릅니다. 버전 변경 시 Preview에서 다시 검증합니다.
+2026-10-21에 공식 설치 문서가 계속 v3 endpoint를 안내하는 것을 확인했고, CDN 파일과 실제 local 초기화 로그의 버전은 **3.8.0**이었습니다.
+현재 로더는 같은 endpoint를 사용하므로 URL·런타임 코드·npm 의존성·lockfile 변경 없이 이 SDK를 불러옵니다.
+확인한 CDN 응답의 `Last-Modified`는 `2026-10-12T07:32:41Z`, 파일 SHA-256은 `d4c44671cafbb694a0fd054078303242681bdf1b5908d6fb9f766d1de3f25911`입니다. 이는 확인 당시 파일의 식별값이며 버전 고정이나 무결성 강제 설정은 아닙니다.
+초기화·로컬 광고·Data 저장 복원 결과와 미검증 범위는 [검증 기록](template/VALIDATION.md)에 남깁니다.
 설치 근거는 [SDK v3 공식 문서](https://docs.crazygames.com/sdk/intro/), 사용 조건은 [Developer Terms](https://files.crazygames.com/documents/developer_terms_20250818.pdf)입니다.
 Node.js는 22.12 이상(Vite 8 요구 사항)이 필요하며, 권장 버전은 `.nvmrc`의 24입니다.
 CI는 `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` 모두 v7을 사용합니다.

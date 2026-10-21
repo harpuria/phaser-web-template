@@ -178,17 +178,22 @@ HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
 
 - 개발 서버 주소에 `?debug`를 붙이면 Arcade 물리 충돌 영역과 렌더 배율·FPS가 보입니다. 배포 빌드에서는 무시됩니다.
 - `?round=5`처럼 붙이면 예제 한 판을 5초로 줄입니다(E2E에서 사용). 실제 게임의 조정값이 보상·랭킹에 영향을 준다면 `import.meta.env.DEV`일 때만 읽도록 합니다.
-- 처리되지 않은 오류와 Promise 거부는 게임 화면 위에 안내와 새로고침 버튼으로 표시됩니다. 콘솔 출력은 그대로 남습니다.
+- 처리되지 않은 오류와 Promise 거부는 `app.fail(message)`로 첫 오류를 유지합니다. 게임·오디오·SDK gameplay·입력을 멈추고 이후 자동 저장을 차단합니다. 열린 설정창을 닫고 안내와 새로고침 버튼을 표시하며 콘솔 출력은 그대로 남습니다. HTML UI를 교체해도 오류 상태의 조작 차단과 복구 경로를 유지합니다.
 
 ## 검증
 
-| 명령                             | 내용                                                      |
-| -------------------------------- | --------------------------------------------------------- |
-| `npm run check`                  | 린트, 포맷, 단위 검사, 타입 검사, 배포 빌드               |
-| `npm run test:e2e`               | 개발 서버에서 Chromium desktop / Pixel 7 크기로 실제 조작 |
-| `E2E_PREVIEW=1 npm run test:e2e` | 이미 빌드한 `dist/`를 검사. `npm run build` 후 실행       |
+| 명령                             | 내용                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| `npm run check`                  | 린트, 포맷, 단위 검사, 타입 검사, 배포 빌드                                 |
+| `npm run test:e2e`               | 개발 서버에서 Chromium desktop / Pixel 7 크기로 실제 조작                   |
+| `E2E_PREVIEW=1 npm run test:e2e` | 이미 빌드한 CrazyGames용 `dist/`를 검사. `npm run build:crazygames` 후 실행 |
+| `npm run test:e2e:standalone`    | 자체 호스팅용 배포 빌드에서 SDK 미요청·로컬 저장·복원 검사                  |
+| `npm run test:sdk`               | 공식 CDN SDK local의 초기화·음소거·광고·저장 복원 검사                      |
 
 검사 서버는 4173 포트를 씁니다. CI는 두 E2E 모드를 모두 실행하고 실패 시 trace/screenshot을 보관합니다.
+standalone 검사는 `test-results/builds/standalone/`에 별도 빌드하고 4175 포트를 사용합니다. 공식 SDK 검사는 `test-results/builds/sdk/`와 4176 포트를 사용합니다. 두 검사는 기존 서버를 재사용하지 않으며, 일반 배포 빌드와 분리합니다.
+검사 결과는 각각 `test-results/e2e/`, `test-results/standalone/`, `test-results/sdk/`에 남깁니다.
+CI는 standalone 검사도 실행합니다. 공식 CDN 검사는 `workflow_dispatch`의 `sdk_smoke`를 켜서 선택적으로 실행하며, 관찰 기록 위치는 [SDK 안내](CRAZYGAMES.md#검증-범위와-공식-문서)를 봅니다.
 Safari/Firefox/실기기는 따로 확인해야 합니다. 모바일 에뮬레이션은 실기기 검증이 아닙니다.
 
 ## 정적 배포
@@ -196,11 +201,13 @@ Safari/Firefox/실기기는 따로 확인해야 합니다. 모바일 에뮬레�
 ```bash
 npm ci
 npm run check   # 배포 빌드까지 생성
+npm run build:standalone # 자체 호스팅용 최종 빌드 (CrazyGames 제출은 build:crazygames)
 npm run preview # 올리기 전에 dist 확인
 ```
 
 - `dist/` 내용 전체(음원 포함)를 정적 서버에 올립니다. `base: './'`이므로 `/my-game/` 같은 하위 경로, itch.io(zip 업로드)도 됩니다.
 - CrazyGames 제출은 [SDK·제출 안내](CRAZYGAMES.md)를 따릅니다. Basic Launch가 기본이며 Full Launch 승인 후 광고를 켭니다.
+- `.env.local`의 `VITE_PLATFORM`으로 기본 대상을 선택할 수 있습니다. `standalone` / `crazygames` 이외 값과 전용 명령의 mode에 맞지 않는 값은 빌드를 중단합니다. [Vite 환경 변수·mode](https://vite.dev/guide/env-and-mode)를 따르며 preview 시점에 빌드 대상이 바뀌지는 않습니다.
 - 라우터가 없어 SPA rewrite 설정은 필요 없습니다. `index.html`을 파일로 직접 열지 말고 HTTP 서버로 엽니다.
 - 해시가 붙은 JS/CSS는 장기 캐시해도 됩니다. `index.html`과 고정 이름 음원은 업데이트 때 캐시를 갱신합니다.
 - 환경 변수는 `.env.example`을 참고합니다. `VITE_*` 값은 번들에 공개되므로 비밀키를 넣지 않습니다.

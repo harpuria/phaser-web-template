@@ -8,6 +8,7 @@
 src/main.ts               Phaser 설정, 장면 등록, 오류 감시, HMR 정리
 src/app.ts                저장·설정·오디오·일시정지·서비스의 수명 소유
 src/config/game.ts        이름, 저장 키 접두사, 해상도, 시작/일시정지 장면, 기능 스위치
+src/config/platform.ts    배포 대상 검증(Vite config와 game config가 공유)
 src/core/                 게임과 무관하게 재사용하는 코드
   store.ts settings.ts      버전 있는 저장, 설정 schema
   audio.ts pause.ts         음량 적용, 이유별 일시정지
@@ -49,6 +50,7 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 5. HMR 때는 오류 감시, HTML listener, 타이머, SDK listener·진행 중 요청, 오디오, Phaser 게임을 정리합니다. SDK 초기화 도중 dispose되면 게임을 만들지 않습니다.
 
 `App`은 장면이 바뀌어도 유지됩니다. 물리·게임 객체·입력 키는 Phaser 장면 수명을 따릅니다.
+처리되지 않은 오류·Promise 거부는 `app.fail(message)`로 전달합니다. 첫 오류를 유지하고 `fatal` 이유로 플레이·오디오·SDK gameplay와 입력을 멈춥니다. 이후 `App.flush()`는 쓰지 않으며, HMR 정리·pagehide·자동 저장도 이를 따릅니다. 새로고침으로 복구합니다.
 
 ## 일시정지
 
@@ -57,6 +59,7 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 광고 `service` 이유만 있을 때는 장면만 멈추고 `adStarted`부터 음소거합니다. 플랫폼 음소거는 사용자 설정과 별도로 보관합니다.
 `PauseState`의 두 번째 callback은 이유가 바뀔 때마다 실행되어 숨김 상태에서 수동 정지를 추가해도 gameplay 이벤트가 반영됩니다.
 수동 토글(버튼·Escape)은 `has('manual')`을 기준으로 해서 다른 이유로 멈춘 동안에도 의도대로 동작합니다.
+`fatal`은 오류 복구 전까지 유지합니다. 광고 완료·탭 복귀·설정창 닫기가 이 이유를 해제하지 않습니다. Shell은 열린 설정창을 닫고 새로고침·전체화면 나가기 외의 조작을 비활성화합니다.
 
 ## 저장
 
@@ -94,6 +97,7 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 `app.setGameplay()`는 조작 가능한 플레이 상태를 받고, 의도적 정지·광고 중단과 합쳐 SDK 이벤트를 보냅니다. 탭 숨김만으로는 gameplayStop을 보내지 않습니다.
 광고는 요청부터 UI/게임을 멈추고 실제 시작 callback부터 음소거하며, 종료·실패 때 광고 이유만 해제합니다. Adapter는 timeout·중복/늦은 callback·destroy 시 취소를 처리합니다.
 Basic Launch는 광고 capability를 끕니다(local 데모 제외). 지원하지 않는 결제와 자체 분석은 unavailable/false입니다. 설정과 제출 방법은 [CrazyGames 안내](CRAZYGAMES.md)를 봅니다.
+`gameConfig.platform`은 검증된 `VITE_PLATFORM`에서 결정하며, `standalone`은 SDK를 요청하지 않고 브라우저 저장소를 선택합니다. 기본값과 `--mode crazygames`는 CrazyGames를 선택합니다. 명시한 플랫폼 mode와 환경 변수의 충돌·잘못된 값은 Vite 시작·빌드에서 거절합니다.
 
 실제 Adapter 도입 시:
 

@@ -1,5 +1,11 @@
 # 변경 기록
 
+## 미배포 — 2026-10-21
+
+- 오류·Promise 거부 시 첫 오류를 유지하고 플레이·오디오·SDK gameplay·입력·자동 저장을 중지. 설정창을 닫고 복구 외 조작 차단. 광고 완료·탭 복귀가 오류 정지를 풀지 않도록 검사.
+- `VITE_PLATFORM`과 `standalone` / `crazygames` 개발·빌드 명령 추가. 잘못된 대상·명시 mode 충돌을 시작·빌드 때 거절. 자체 호스팅용 배포 빌드가 SDK 요청 없이 저장·복원하는지 E2E와 CI에서 검사.
+- `npm run test:sdk`로 공식 CDN SDK local 초기화·음소거·광고·Data 저장 복원 검사. 버전·응답 식별값·SHA-256·콘솔 오류·단계별 결과를 기록하며, CI 수동 실행에서도 선택 가능.
+
 ## 미배포 — 2026-10-07
 
 - CrazyGames HTML5 SDK v3 로더·초기화·환경 감지·Adapter 추가. SDK 준비 후 저장소 생성, loading/gameplay 이벤트와 platform mute 설정 연결.

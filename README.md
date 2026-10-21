@@ -18,6 +18,7 @@ npm run dev
 터미널의 Local 주소(기본 `http://localhost:5173`)를 엽니다. 휴대폰은 같은 네트워크에서 Network 주소로 접속합니다.
 `플레이 시작`을 누르면 30초 동안 별을 모으는 예제 게임이 실행됩니다.
 방향키·WASD·게임패드로 움직이거나, 게임 화면을 누르고 있으면 그 지점으로 이동합니다.
+SDK 없이 자체 호스팅용으로 개발할 때는 `npm run dev:standalone`을 사용합니다. 기존 `dev` / `build`의 기본 대상은 CrazyGames입니다.
 
 ## 들어 있는 기능
 
@@ -46,14 +47,20 @@ CrazyGames는 Basic Launch 설정이 기본입니다. Full Launch 승인 후 광
 
 ```bash
 npm run dev                     # 개발 서버 (?debug 를 붙이면 물리 충돌 영역 표시)
+npm run dev:standalone          # 외부 SDK 없이 개발
+npm run build:standalone        # 자체 호스팅용 dist 생성
+npm run build:crazygames        # CrazyGames 제출용 dist 생성
 npm run check                   # lint + format + 단위 검사 + typecheck + 배포 빌드
 npx playwright install chromium # E2E 첫 실행 전 한 번
 npm run test:e2e                # 데스크톱/모바일 Chromium 검사
-E2E_PREVIEW=1 npm run test:e2e  # 배포 빌드 검사 (먼저 npm run build)
+E2E_PREVIEW=1 npm run test:e2e  # 배포 빌드 검사 (먼저 npm run build:crazygames)
+npm run test:e2e:standalone     # 자체 호스팅용 배포 빌드·저장·SDK 미요청 검사
+npm run test:sdk                # 공식 CDN SDK local 검사 (네트워크 필요)
 npm run preview                 # dist를 로컬에서 확인
 ```
 
 배포는 `dist/` 내용 전체를 정적 호스팅에 올리면 됩니다. 자세한 내용은 [개발 안내 — 정적 배포](docs/DEVELOPMENT.md#정적-배포)를 봅니다.
+`VITE_PLATFORM=standalone` / `crazygames`로 기본 대상을 설정할 수 있습니다. 전용 명령의 대상과 환경 변수가 충돌하면 실행·빌드를 중단합니다.
 
 ## 문서
 

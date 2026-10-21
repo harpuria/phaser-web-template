@@ -28,5 +28,6 @@ git clone --depth 1 https://github.com/harpuria/phaser-web-template my-game && r
 2. 게임의 `config/`, `game/`(schema·규칙), UI는 보존합니다.
 3. 저장 schema에 영향이 있으면 migration 검사를 추가하고, 기록한 템플릿 버전·commit을 갱신합니다.
    CrazyGames 연동을 가져오면 `App` 생성 전에 `createPlatform()`을 기다립니다. 이미 입점한 게임의 로컬 저장은 별도 Data 이관이 필요합니다.
+   플랫폼별 빌드를 가져오면 `src/config/platform.ts`, Vite의 대상 검증·define, npm 명령도 함께 반영하고 게임 config의 `platform`·SDK 활성 값을 연결합니다. 오류 감시는 `app.fail(message)`로 전달합니다.
 
 `docs/template/`는 템플릿 자체의 이력입니다. 파생 게임의 기획·검증 기록은 게임 문서에 따로 둡니다.

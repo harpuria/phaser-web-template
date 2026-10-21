@@ -52,7 +52,7 @@ export class App {
   ready = false;
   /** 사용자에게 보여줄 asset 로딩 실패 또는 처리되지 않은 오류. */
   loadingError = '';
-  fatalError = '';
+  private fatalMessage = '';
   onState = () => {};
   private cleanup: (() => void)[] = [];
   private playing = false;
@@ -85,13 +85,26 @@ export class App {
   private syncGameplay() {
     // CrazyGames handles visibility/focus itself; only intentional breaks are reported.
     this.platform.setGameplay(
-      this.playing && !this.pause.hasOtherThan('hidden'),
+      this.playing && !this.fatalError && !this.pause.hasOtherThan('hidden'),
     );
+  }
+
+  get fatalError() {
+    return this.fatalMessage;
+  }
+  /** Keep the first failure latched until reload; failed state must not be saved. */
+  fail(message: string) {
+    if (this.fatalError) return;
+    this.fatalMessage = message || '알 수 없는 오류';
+    if (this.game) this.game.input.enabled = false;
+    this.pause.set('fatal', true);
   }
 
   attach(game: Phaser.Game) {
     this.game = game;
     this.audio = new AudioService(game.sound, this.settings.data);
+    this.audio.suspend(this.pause.hasOtherThan('service'));
+    if (this.fatalError) game.input.enabled = false;
     this.cleanup.push(
       this.platform.listenMute((muted) =>
         this.audio?.setExternalMute('platform', muted),
@@ -113,6 +126,7 @@ export class App {
     visibility();
   }
   flush() {
+    if (this.fatalError) return;
     this.save.flush();
     this.settings.flush();
     this.onState();

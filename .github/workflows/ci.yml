@@ -4,6 +4,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      sdk_smoke:
+        description: Run the official CrazyGames CDN local smoke test
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -23,6 +28,14 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: E2E_PREVIEW=1 npm run test:e2e
+      - run: npm run test:e2e:standalone
+      - run: npm run test:sdk
+        if: github.event_name == 'workflow_dispatch' && inputs.sdk_smoke
+      - uses: actions/upload-artifact@v7
+        if: success() && github.event_name == 'workflow_dispatch' && inputs.sdk_smoke
+        with:
+          name: crazygames-sdk-observation
+          path: test-results/sdk/
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
