@@ -18,6 +18,7 @@ export type StoreStatus =
 export class Store<T> {
   private value: T;
   private dirty = false;
+  private writeFailed = false;
   status: StoreStatus = 'ready';
 
   constructor(
@@ -31,6 +32,11 @@ export class Store<T> {
 
   get data(): Readonly<T> {
     return structuredClone(this.value);
+  }
+
+  /** Only a failed write of previously readable data is safe to retry. */
+  get canRetry(): boolean {
+    return this.status === 'unavailable' && this.writeFailed;
   }
 
   private load() {
@@ -82,7 +88,7 @@ export class Store<T> {
   }
 
   flush(): boolean {
-    if (this.status !== 'ready') return false;
+    if (this.status !== 'ready' && !this.canRetry) return false;
     if (!this.dirty) return true;
     try {
       this.storage!.setItem(
@@ -90,8 +96,11 @@ export class Store<T> {
         JSON.stringify({ version: this.schema.version, data: this.value }),
       );
       this.dirty = false;
+      this.writeFailed = false;
+      this.status = 'ready';
       return true;
     } catch {
+      this.writeFailed = true;
       this.status = 'unavailable';
       return false;
     }
@@ -103,6 +112,7 @@ export class Store<T> {
       if (!this.storage) return false;
       this.storage.removeItem(this.key);
       this.value = this.schema.defaults();
+      this.writeFailed = false;
       this.status = 'ready';
       this.dirty = true;
       return this.flush();

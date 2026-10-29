@@ -101,6 +101,7 @@ test('SDK initializes before Data, then reports loading, gameplay, pause, result
   await expect(page.locator('#best')).toHaveText('12');
   await expect(page.locator('#rounds')).toHaveText('3');
   await expect(page.locator('#storage-kind')).toHaveText('CRAZYGAMES SAVE');
+  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
   expect(await events(page)).toEqual([
     'init',
     'get:phaser-web-template:save',

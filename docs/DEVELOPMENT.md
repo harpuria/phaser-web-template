@@ -132,12 +132,14 @@ const persisted = this.app.save.flush(); // false면 "저장됨"이라고 표시
 ```
 
 - 매 프레임 쓰지 말고 판 종료처럼 중요한 순간에 `flush()`합니다. 나머지는 주기·탭 숨김 때 자동으로 저장됩니다.
+- 정상 읽기 후 일시적인 쓰기 실패는 `canRetry === true`로 표시됩니다. 다음 자동 저장 또는 저장 다시 시도 버튼이 최신 진행 상태를 다시 씁니다. 읽기 실패·손상·미래 버전은 원본 보호를 위해 재시도하지 않습니다.
 - `reset()`은 원본을 지웁니다. 사용자가 확인한 경우에만 호출합니다.
 - CrazyGames 환경은 SDK Data에 저장됩니다. 제출 시 Progress Save에서 SDK Data 사용을 켭니다. 설정과 보호 정책은 [CrazyGames 안내](CRAZYGAMES.md)를 봅니다.
 
 ## 오디오와 일시정지
 
-- `app.audio?.playMusic(key)` / `sfx(key)` / `stopMusic()`. 음량·음소거 설정은 자동으로 적용됩니다.
+- `app.audio?.playMusic(key)` / `sfx(key)` / `stopMusic()`. 설정 UI에서 바꾼 음량·음소거는 즉시 적용됩니다.
+- 커스텀 설정 UI에서 `app.settings.update()` / `reset()`을 호출한 뒤 `app.applySettings()`로 적용합니다. `app.listenSettings(listener)`는 현재 설정을 즉시 전달하고 변경 시 다시 호출합니다. 장면에서는 반환한 해제 함수를 shutdown에 연결합니다. 메뉴 tween과 CSS 전환도 움직임 줄이기 설정을 즉시 따릅니다.
 - 브라우저 자동재생 제한 때문에 첫 소리는 사용자 클릭·터치 이후에 납니다. 메뉴의 버튼 동작에서 음악을 시작하세요.
 - 인벤토리 같은 내 UI로 게임을 멈추려면 `app.pause.set('inventory', true)`, 닫을 때 같은 이유로 `false`를 넘깁니다.
   모든 이유가 풀려야 재개되므로 탭 전환이 수동 일시정지를 풀지 않습니다.
@@ -162,7 +164,7 @@ HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
 
 - 게임 카드(제목 줄 + 캔버스 + 버튼 줄)는 화면 높이를 넘지 않게 줄어들고(`--stage-chrome`), 플레이를 시작하면 카드 전체가 보이도록 스크롤합니다.
 - 세로 게임은 `width: 540, height: 960, orientation: 'portrait'`로 바꿉니다. 안내 문구와 전체화면 회전 안내도 이 값을 따릅니다.
-- 전체화면 버튼은 지원 브라우저에서만 보입니다(iPhone Safari는 미지원). 전체화면에서는 게임이 화면 전체로 늘어나고, 권장 방향이 아니면 회전 안내가 뜹니다.
+- 전체화면 버튼은 지원 브라우저에서만 보입니다. 전체화면 대상 `#stage`에는 조작 버튼도 포함됩니다. 나가지 않고 시작·일시정지·재개·메뉴·재시작할 수 있고, 권장 방향이 아니면 캔버스 위에 회전 안내가 뜹니다.
 
 ### 렌더 배율
 
@@ -182,19 +184,26 @@ HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
 
 ## 검증
 
-| 명령                             | 내용                                                                        |
-| -------------------------------- | --------------------------------------------------------------------------- |
-| `npm run check`                  | 린트, 포맷, 단위 검사, 타입 검사, 배포 빌드                                 |
-| `npm run test:e2e`               | 개발 서버에서 Chromium desktop / Pixel 7 크기로 실제 조작                   |
-| `E2E_PREVIEW=1 npm run test:e2e` | 이미 빌드한 CrazyGames용 `dist/`를 검사. `npm run build:crazygames` 후 실행 |
-| `npm run test:e2e:standalone`    | 자체 호스팅용 배포 빌드에서 SDK 미요청·로컬 저장·복원 검사                  |
-| `npm run test:sdk`               | 공식 CDN SDK local의 초기화·음소거·광고·저장 복원 검사                      |
+| 명령                             | 내용                                                           |
+| -------------------------------- | -------------------------------------------------------------- |
+| `npm run check`                  | 린트, 포맷, 단위 검사, 타입 검사, 배포 빌드                    |
+| `npm run test:e2e`               | 개발 서버에서 Chromium·Firefox·WebKit 및 Pixel 7 Chromium 조작 |
+| `E2E_PREVIEW=1 npm run test:e2e` | CrazyGames 전용 빌드를 생성한 뒤 배포 모드 검사 (`dist/` 보존) |
+| `npm run test:e2e:standalone`    | 자체 호스팅용 배포 빌드에서 SDK 미요청·로컬 저장·복원 검사     |
+| `npm run test:sdk`               | 공식 CDN SDK local의 초기화·음소거·광고·저장 복원 검사         |
 
-검사 서버는 4173 포트를 씁니다. CI는 두 E2E 모드를 모두 실행하고 실패 시 trace/screenshot을 보관합니다.
+개발 검사는 4273, 배포 검사는 4274 포트를 씁니다. 기존 서버를 재사용하지 않으며 충돌하면 실패합니다. 배포 검사는 `test-results/builds/e2e/`에 CrazyGames 빌드를 직접 생성하므로 사전 빌드가 필요 없습니다. CI는 두 모드를 모두 실행하고 실패 시 trace/screenshot을 보관합니다.
 standalone 검사는 `test-results/builds/standalone/`에 별도 빌드하고 4175 포트를 사용합니다. 공식 SDK 검사는 `test-results/builds/sdk/`와 4176 포트를 사용합니다. 두 검사는 기존 서버를 재사용하지 않으며, 일반 배포 빌드와 분리합니다.
-검사 결과는 각각 `test-results/e2e/`, `test-results/standalone/`, `test-results/sdk/`에 남깁니다.
+검사 결과는 각각 `test-results/e2e/dev/`, `test-results/e2e/preview/`, `test-results/standalone/`, `test-results/sdk/`에 남깁니다. CPU/GPU 경합을 줄이기 위해 기본 worker는 1개입니다.
 CI는 standalone 검사도 실행합니다. 공식 CDN 검사는 `workflow_dispatch`의 `sdk_smoke`를 켜서 선택적으로 실행하며, 관찰 기록 위치는 [SDK 안내](CRAZYGAMES.md#검증-범위와-공식-문서)를 봅니다.
-Safari/Firefox/실기기는 따로 확인해야 합니다. 모바일 에뮬레이션은 실기기 검증이 아닙니다.
+공통 흐름은 Chromium·Firefox·WebKit에서 실행합니다. Chromium 전용 CDP touch는 `tests/e2e/touch.ts`로 분리하여 Pixel 7 프로젝트에서만 사용합니다. WebKit 검사는 실제 Safari/iPhone 검증이 아니며, 모바일 에뮬레이션도 실기기 검증이 아닙니다.
+
+실제 iPhone·Android에서는 다음을 별도로 확인하고 기기·OS·브라우저·결과를 기록합니다.
+
+- 터치 이동과 전체화면 지원 여부, 전체화면 내 일시정지·재시작.
+- 세로/가로 회전, 주소창 높이 변화, 노치와 버튼 가림 여부.
+- 첫 터치 후 오디오 시작, 백그라운드 복귀·광고 후 오디오 재개.
+- 10분 이상 플레이 중 FPS·발열·메모리·입력 반응과 저장 복원.
 
 ## 정적 배포
 

@@ -58,15 +58,20 @@ export class MenuScene extends Phaser.Scene {
     [cx - 120, cx + 120].forEach((x) =>
       this.add.image(x, 363, assetKeys.star).setScale(1 / k),
     );
-    if (!this.app.settings.data.reducedMotion)
-      this.tweens.add({
-        targets: player,
-        y: 350,
-        duration: 1200,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.inOut',
-      });
+    const hover = this.tweens.add({
+      targets: player,
+      y: 350,
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+      paused: true,
+    });
+    const stopListening = this.app.listenSettings(({ reducedMotion }) => {
+      if (reducedMotion) hover.pause();
+      else hover.resume();
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, stopListening);
     this.cameras.main.fadeIn(this.app.transitionMs);
   }
   startGame() {

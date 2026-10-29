@@ -1,7 +1,8 @@
 # 템플릿 점검 — 2026-10-21
 
 검토 기준: `9090531`의 소스·문서·테스트와 배포 빌드 실행. SDK 확인 및 검사 결과는 [의존성](../DEPENDENCIES.md)과 [검증 기록](VALIDATION.md)에 기록합니다.
-1~3번은 2026-10-21에 반영했습니다. 아래에는 수정 전 근거와 반영 내용을 함께 남깁니다. 4번은 후속 작업입니다.
+1~3번은 2026-10-21에 반영했습니다. 아래에는 수정 전 근거와 반영 내용을 함께 남깁니다.
+2026-10-29 업데이트: 4번의 Firefox·WebKit 자동 검사를 추가했습니다. 실제 모바일 기기 검증은 남아 있습니다. 추가 개선 내용은 [변경 기록](CHANGELOG.md)을 봅니다.
 
 ## 1. P1 · 치명적 오류가 발생하면 게임 진행도 멈추기
 
@@ -38,13 +39,13 @@ setTimeout(() => {
 
 ## 4. P2 · 브라우저와 실제 모바일 기기 검증 확대
 
-현재 [Playwright 설정](../../playwright.config.ts)의 desktop과 Pixel 7은 모두 Chromium입니다. 반응형 화면·합성 터치는 확인하지만 Safari/Firefox 및 실제 휴대폰의 오디오·전체화면·회전·GPU 동작은 미검증입니다.
+점검 당시 [Playwright 설정](../../playwright.config.ts)의 desktop과 Pixel 7은 모두 Chromium이었습니다. 당시에는 반응형 화면·합성 터치를 확인했으며 Safari/Firefox 및 실제 휴대폰의 오디오·전체화면·회전·GPU 동작은 미검증이었습니다.
 
-권장: [Playwright의 브라우저별 project](https://playwright.dev/docs/test-projects)에 따라 WebKit·Firefox에서 시작·플레이·설정·저장 복원 공통 흐름을 먼저 검사합니다. 현재 모바일 이동 검사의 Chromium CDP 사용 부분은 공통 흐름과 분리하고, iPhone/Android에서 터치·오디오 재개·회전·전체화면·장시간 플레이를 직접 확인합니다.
+당시 권장: [Playwright의 브라우저별 project](https://playwright.dev/docs/test-projects)에 따라 WebKit·Firefox에서 시작·플레이·설정·저장 복원 공통 흐름을 먼저 검사합니다. 모바일 이동 검사의 Chromium CDP 사용 부분은 공통 흐름과 분리하고, iPhone/Android에서 터치·오디오 재개·회전·전체화면·장시간 플레이를 직접 확인합니다.
 완료 기준: 브라우저별 자동 검사 결과와 실제 기기 확인 결과를 구분해서 기록합니다. WebKit 자동 검사와 iPhone 실기기 검증을 동일하게 취급하지 않습니다.
 
 ## 권장하는 다음 작업
 
-남은 항목은 4번입니다. WebKit·Firefox의 공통 플레이 흐름부터 자동화하고 실제 모바일 기기 확인을 이어갈 수 있습니다.
+4번의 공통 흐름 자동 검사는 반영했습니다. 실제 모바일 기기에서는 [개발 안내의 검증 목록](../DEVELOPMENT.md#검증)을 따라 터치·회전·전체화면·오디오 재개·장시간 플레이를 확인합니다.
 
-요청 예시: “game-implement로 WebKit·Firefox에서 시작·플레이·설정·저장 복원을 검사하고, 실제 iPhone/Android에서 추가 확인할 항목을 정리해 줘.”
+요청 예시: “game-implement로 실제 iPhone/Android에서 터치·회전·오디오·전체화면·장시간 플레이를 확인하고 기기별 결과를 기록해 줘.”

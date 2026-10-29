@@ -14,12 +14,12 @@ export class Shell {
     this.root.innerHTML = `
       <header class="header"><a class="brand" href="./"><span class="brand-icon">ϟ</span> PHASER <span class="muted">/ WEB TEMPLATE</span></a><span class="version">v${gameConfig.version} <span class="dot"></span> READY TO BUILD</span></header>
       <section class="intro"><p class="eyebrow">THE FIRST FRAME OF YOUR NEXT IDEA</p><h1>여기서, 게임을 시작하세요<span>.</span></h1><p class="subtitle">게임에 집중할 수 있도록, 반복되는 준비는 미리 해두었습니다.</p></section>
-      <div class="workspace"><section class="stage-card" aria-label="게임 데모">
+      <div class="workspace"><section class="stage-card" id="stage" data-orientation="${gameConfig.orientation}" aria-label="게임 데모">
         <div class="stage-heading"><span><span class="dot"></span> STAR COLLECTOR <small>플레이 가능한 예제</small></span><span id="mode-label">MENU</span></div>
-        <div class="canvas-wrap" id="stage" data-orientation="${gameConfig.orientation}"><div id="game" tabindex="0" aria-label="별 모으기 게임. 방향키, WASD, 게임패드로 이동하거나 화면을 누르세요."></div><div id="pause-overlay" class="overlay" hidden>잠시 쉬어가는 중<span>계속하기를 누르면 다시 시작합니다.</span></div><div id="rotate-hint" class="overlay">기기를 ${gameConfig.orientation === 'landscape' ? '가로' : '세로'}로 돌려 주세요<span>전체화면에서 권장 방향으로 플레이합니다.</span></div><span id="debug-info" hidden></span><button id="exit-fullscreen" class="secondary" aria-label="전체화면 나가기">✕</button><div id="error-overlay" class="overlay" role="alert" hidden>문제가 발생했습니다<span id="error-message"></span><button id="reload" class="primary">새로고침</button></div></div>
+        <div class="canvas-wrap"><div id="game" tabindex="0" aria-label="별 모으기 게임. 방향키, WASD, 게임패드로 이동하거나 화면을 누르세요."></div><div id="pause-overlay" class="overlay" hidden>잠시 쉬어가는 중<span>계속하기를 누르면 다시 시작합니다.</span></div><div id="rotate-hint" class="overlay">기기를 ${gameConfig.orientation === 'landscape' ? '가로' : '세로'}로 돌려 주세요<span>전체화면에서 권장 방향으로 플레이합니다.</span></div><span id="debug-info" hidden></span><button id="exit-fullscreen" class="secondary" aria-label="전체화면 나가기">✕</button><div id="error-overlay" class="overlay" role="alert" hidden>문제가 발생했습니다<span id="error-message"></span><button id="reload" class="primary">새로고침</button></div></div>
         <div class="game-toolbar"><p><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd> 이동 <span class="touch-hint">· 화면을 눌러 이동</span><span class="rotate-tip">기기를 ${gameConfig.orientation === 'landscape' ? '가로' : '세로'}로 돌리면 더 크게 플레이할 수 있어요.</span></p><div><button id="fullscreen" class="secondary" hidden>전체화면</button><button id="pause" class="secondary" hidden>일시정지</button><button id="home" class="secondary" hidden>메뉴</button><button id="play" class="primary">플레이 시작 <span>↗</span></button></div></div>
       </section>
-      <aside class="sidebar"><section class="panel"><div class="panel-title"><h2>내 플레이 기록</h2><span class="tag" id="storage-kind">LOCAL SAVE</span></div><div class="stats"><div><strong id="best">0</strong><span>최고 기록</span></div><div><strong id="rounds">0</strong><span>플레이 횟수</span></div></div><p id="storage-status" class="caption"></p><button id="settings" class="wide secondary">설정 열기 <span>⚙</span></button></section>
+      <aside class="sidebar"><section class="panel"><div class="panel-title"><h2>내 플레이 기록</h2><span class="tag" id="storage-kind">LOCAL SAVE</span></div><div class="stats"><div><strong id="best">0</strong><span>최고 기록</span></div><div><strong id="rounds">0</strong><span>플레이 횟수</span></div></div><p id="storage-status" class="caption"></p><button id="retry-save" class="wide secondary" hidden>저장 다시 시도</button><button id="settings" class="wide secondary">설정 열기 <span>⚙</span></button></section>
       <section class="panel"><div class="panel-title"><h2>기본 기능</h2><span class="tag green">INCLUDED</span></div><ul class="features"><li>버전 관리가 있는 로컬 저장</li><li>음량 · 효과음 · 배경음 설정</li><li>화면 전환 · 자동 일시정지</li><li>키보드 · 마우스 · 터치 · 게임패드 입력</li><li>전체화면 · 오류 안내 화면</li><li>광고 · 결제 서비스 연결 지점</li></ul></section></aside></div>
       <section class="toolbox"><div><p class="eyebrow">SERVICE PLAYGROUND</p><h2>연결하기 전에, 가볍게 테스트</h2><p class="caption" id="service-mode"></p></div><div class="service-actions"><label class="check" id="consent-label"><input id="consent" type="checkbox" /> Mock 분석·광고 동의</label><select id="outcome" aria-label="Mock 결과"><option value="completed">성공</option><option value="cancelled">취소</option><option value="error">오류</option></select><button id="reward" class="secondary">보상형 광고 테스트</button><button id="purchase" class="secondary">구매 테스트</button><button id="sound" class="secondary">효과음 듣기</button></div><p id="notice" role="status" aria-live="polite">준비되었습니다. 플레이를 시작해 보세요.</p></section>
       <footer><span>PHASER 4.2.1 · TYPESCRIPT · VITE</span><span>당신의 게임은 <code>src/game/</code>에서 시작됩니다.</span></footer>
@@ -114,11 +114,19 @@ export class Shell {
           [key]:
             input.type === 'checkbox' ? input.checked : Number(input.value),
         }));
-        app.audio?.apply(app.settings.data);
+        app.applySettings();
         app.settings.flush();
         this.render();
       });
     }
+    this.on('retry-save', 'click', () => {
+      app.flush();
+      this.notify(
+        app.save.status === 'ready' && app.settings.status === 'ready'
+          ? '진행 상태와 설정을 저장했습니다.'
+          : '아직 저장하지 못했습니다. 진행 상태는 유지됩니다.',
+      );
+    });
     this.on('reset', 'click', () => {
       if (!confirm('플레이 기록을 지울까요? 이 작업은 되돌릴 수 없습니다.'))
         return;
@@ -136,7 +144,7 @@ export class Shell {
           ? '설정을 초기화했습니다.'
           : '저장 공간에 접근할 수 없습니다.',
       );
-      app.audio?.apply(app.settings.data);
+      app.applySettings();
       this.element<HTMLDialogElement>('settings-dialog').close();
       this.render();
     });
@@ -186,6 +194,7 @@ export class Shell {
   }
   render() {
     const app = this.app;
+    this.root.dataset.reducedMotion = String(app.settings.data.reducedMotion);
     const mode = app.session.mode;
     const adPending = app.pause.has('service');
     for (const id of [
@@ -196,6 +205,7 @@ export class Shell {
       'settings',
       'reward',
       'purchase',
+      'retry-save',
     ])
       this.element<HTMLButtonElement>(id).disabled = !app.ready || adPending;
     this.element<HTMLButtonElement>('reward').disabled ||= mode === 'playing';
@@ -229,14 +239,19 @@ export class Shell {
           : app.storageKind === 'local'
             ? 'LOCAL SAVE'
             : 'SAVE UNAVAILABLE';
-    this.element('settings-storage').textContent = ready
-      ? storageMessage
-      : '설정을 저장하지 못했습니다. 저장 상태를 확인해 주세요.';
+    const canRetry = app.save.canRetry || app.settings.canRetry;
+    this.element('retry-save').hidden = !canRetry;
+    this.element('settings-storage').textContent =
+      app.settings.status === 'ready'
+        ? storageMessage
+        : '설정을 저장하지 못했습니다. 저장 상태를 확인해 주세요.';
     this.element('storage-status').textContent =
       app.platformWarning ||
       (ready
         ? storageMessage
-        : `저장 보호 모드 · 기록: ${app.save.status}, 설정: ${app.settings.status}. 설정에서 초기화할 수 있습니다.`);
+        : canRetry
+          ? '저장하지 못했습니다. 진행 상태를 유지하며 자동으로 다시 시도합니다. 저장 다시 시도 버튼으로 즉시 저장할 수도 있습니다.'
+          : `저장 보호 모드 · 기록: ${app.save.status}, 설정: ${app.settings.status}. 설정에서 초기화할 수 있습니다.`);
     this.element('mode-label').textContent = app.pause.paused
       ? 'PAUSED'
       : mode.toUpperCase();

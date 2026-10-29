@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { disableSdk } from './platform-fixtures';
+import { holdTouchUntil } from './touch';
 
 // The standalone contract stays deterministic without external SDK/network access.
 test.beforeEach(async ({ page }) => {
@@ -51,17 +52,7 @@ test('play, pause, settings, save, restart, and menu navigation', async ({
       timeout: 20_000,
     });
   if (testInfo.project.name === 'mobile') {
-    const touch = await page.context().newCDPSession(page);
-    await touch.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [toScreen(650, 300)],
-    });
-    await roundEnds();
-    await touch.send('Input.dispatchTouchEvent', {
-      type: 'touchEnd',
-      touchPoints: [],
-    });
-    await touch.detach();
+    await holdTouchUntil(page, toScreen(650, 300), roundEnds);
   } else {
     await page.keyboard.down('ArrowRight');
     await roundEnds();
@@ -132,6 +123,78 @@ test('corrupt data remains intact until explicit reset', async ({ page }) => {
   await expect(page.locator('#storage-status')).toContainText('자동으로 저장');
 });
 
+test('a temporary save failure can be retried without losing the round', async ({
+  page,
+}) => {
+  await page.goto('/?round=1');
+  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
+  await page.evaluate(() => {
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'phaser-web-template:save') {
+        Storage.prototype.setItem = write;
+        throw new DOMException(
+          'Temporary storage failure',
+          'QuotaExceededError',
+        );
+      }
+      write.call(this, key, value);
+    };
+  });
+  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await expect(page.locator('#mode-label')).toHaveText('RESULT');
+  await expect(page.locator('#rounds')).toHaveText('1');
+  await page.getByRole('button', { name: '저장 다시 시도' }).click();
+  await expect(page.locator('#storage-status')).toContainText('자동으로 저장');
+  await page.reload();
+  await expect(page.locator('#rounds')).toHaveText('1');
+});
+
+test('fullscreen keeps start, pause, restart, and menu controls usable', async ({
+  page,
+}) => {
+  await page.goto('/?round=3');
+  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
+  const fullscreen = page.getByRole('button', {
+    name: '전체화면',
+    exact: true,
+  });
+  test.skip(
+    await fullscreen.isHidden(),
+    'Fullscreen is not supported by this browser/device',
+  );
+  await fullscreen.click();
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement?.id))
+    .toBe('stage');
+  expect(
+    await page
+      .locator('#play')
+      .evaluate((button) => document.fullscreenElement?.contains(button)),
+  ).toBe(true);
+  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await page.getByRole('button', { name: '일시정지', exact: true }).click();
+  await expect(page.locator('#pause-overlay')).toBeVisible();
+  await page.getByRole('button', { name: '계속하기' }).click();
+  await expect(page.locator('#mode-label')).toHaveText('RESULT', {
+    timeout: 20_000,
+  });
+  await page.screenshot({
+    path: test.info().outputPath('fullscreen-result.png'),
+  });
+  await page.getByRole('button', { name: '다시 플레이' }).click();
+  await expect(page.locator('#mode-label')).toHaveText('PLAYING');
+  await page.getByRole('button', { name: '메뉴', exact: true }).click();
+  await expect(page.locator('#mode-label')).toHaveText('MENU');
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement?.id))
+    .toBe('stage');
+  await page.getByRole('button', { name: '전체화면 나가기' }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement))
+    .toBeNull();
+});
+
 test('asset failure keeps the game disabled and shows recovery instructions', async ({
   page,
 }) => {
@@ -177,4 +240,45 @@ test('uncaught errors show a recovery screen', async ({ page }) => {
   });
   await expect(page.getByRole('alert')).toContainText('demo failure');
   await expect(page.getByRole('button', { name: '새로고침' })).toBeVisible();
+});
+
+test('reduced motion immediately freezes the menu and resets with settings', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
+  await page.getByRole('button', { name: '설정 열기' }).click();
+  await page.getByLabel('화면 움직임 줄이기').check();
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  const canvas = page.locator('#game canvas');
+  // Compare the same running canvas across time, without browser-specific golden images.
+  const frozen = await canvas.screenshot();
+  await page.waitForTimeout(400);
+  expect((await canvas.screenshot()).equals(frozen)).toBe(true);
+  expect(
+    await page
+      .locator('#play')
+      .evaluate((button) => getComputedStyle(button).transitionDuration),
+  ).toBe('0s');
+  await page.getByRole('button', { name: '설정 열기' }).click();
+  await page.getByLabel('화면 움직임 줄이기').uncheck();
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect
+    .poll(async () => (await canvas.screenshot()).equals(frozen))
+    .toBe(false);
+  await page.getByRole('button', { name: '설정 열기' }).click();
+  await page.getByLabel('화면 움직임 줄이기').check();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page
+    .getByRole('button', { name: '설정 초기화 / 저장 오류 복구' })
+    .click();
+  await expect(page.locator('#app')).toHaveAttribute(
+    'data-reduced-motion',
+    'false',
+  );
+  const resetFrame = await canvas.screenshot();
+  await expect
+    .poll(async () => (await canvas.screenshot()).equals(resetFrame))
+    .toBe(false);
 });

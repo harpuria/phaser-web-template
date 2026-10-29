@@ -1,5 +1,37 @@
 # 검증 기록
 
+## 저장 재시도·전체화면 조작·설정 즉시 적용·브라우저 확대 — 2026-10-28~29 · macOS arm64 · Node 24.16.0
+
+| 검사                             | 결과                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `npm run check`                  | ESLint, Prettier, 단위 67개, TypeScript, Vite build 통과                                                |
+| `npm run test:e2e`               | Chromium desktop / Pixel 7, Firefox, WebKit: 70개 통과, 8개 의도적 skip                                 |
+| `E2E_PREVIEW=1 npm run test:e2e` | 전용 CrazyGames 빌드 생성 후 같은 구성: 70개 통과, 8개 의도적 skip                                      |
+| `npm run test:e2e:standalone`    | Chromium desktop / Pixel 7: 2개 통과                                                                    |
+| 휴대폰 가로 전체화면 추가 확인   | 배포 빌드·Pixel 7 에뮬레이션·844×390: 캔버스/버튼이 화면 안에 배치, 일시정지·재개·재시작, pageerror 0건 |
+
+- 브라우저: Playwright 1.63.0의 Chromium 153.0.8010.12, Firefox 155.0, WebKit 26.6. Pixel 7은 Chromium 화면·합성 touch 에뮬레이션이며 실제 기기가 아닙니다. 8개 skip은 모바일에서 중복되는 반응형 7개와 키보드 Escape 1개입니다. 추가 Firefox/WebKit 프로젝트에서는 Chromium 반응형 전용 spec을 제외하고 공통·SDK 경계 흐름을 실행합니다.
+- 저장 재시도: 변경 전 회귀 검사가 실패하는 것을 확인했습니다. 변경 후 일시 쓰기 실패가 반복되어도 기존 원본과 최신 메모리 값을 유지하고, 복구 후 최신 값을 저장합니다. 초기 읽기 실패·손상·미래 버전은 계속 원본 쓰기를 차단합니다. 브라우저에서는 재시도 버튼과 새로고침 후 진행 복원도 확인했습니다.
+- 전체화면: 변경 전 조작 버튼이 fullscreen element 밖에 있는 회귀 검사 실패를 확인했습니다. 변경 후 전체화면 안에서 시작·일시정지·재개·판 종료·재시작·메뉴·나가기를 검사했습니다. desktop/WebKit 전체화면 결과, 모바일 세로 회전 안내와 버튼, 휴대폰 가로 일시정지 screenshot을 육안으로 확인했습니다.
+- 움직임 줄이기: 변경 전 옵션을 켜도 메뉴 캔버스가 계속 변하는 실패를 확인했습니다. 변경 후 일정 시간 간격의 동일 캔버스 screenshot 비교로 정지·해제·설정 초기화 후 재개를 확인했으며 CSS 전환도 0초로 바뀝니다.
+- 의존성 경계: 실제 ESLint API로 core/services의 정적 import·타입 import·re-export·동적 import가 거절되고, App 조립과 공통 모듈 간 import는 허용되는지 검사합니다.
+- 확대 검사에서 SDK 이벤트 assertion이 preload 완료보다 먼저 실행되는 문제를 발견했습니다. 플레이 시작 버튼이 활성화된 뒤 이벤트를 확인하도록 수정한 후 세 엔진 모두 통과했습니다.
+- 일반 개발/배포 결과는 `test-results/e2e/dev/`, `test-results/e2e/preview/`로 분리됩니다. 배포 검사는 `test-results/builds/e2e/`에 빌드하고 기존 `dist/`와 서버를 재사용하지 않습니다. 추가 가로 화면 screenshot은 `test-results/fullscreen-landscape-paused.png`입니다.
+- 미검증: 실제 iPhone·실제 Safari·GPU 성능·청음·장시간 플레이, CrazyGames Preview/실환경 광고·계정 동기화, 원격 GitHub Actions 실행. Android 실기기는 아래 별도 기록을 참고합니다. 공식 CDN smoke는 이번 변경에서 재실행하지 않았으며 SDK 대역 검사와 구분합니다. 실제 기기 확인 목록은 [개발 안내](../DEVELOPMENT.md#검증)에 있습니다.
+
+## Android 실기기 확인 — 2026-10-29 · Samsung SM-F966N · Android 17
+
+| 항목 | 결과 |
+| --- | --- |
+| Chrome 터치 실행 | 메뉴·플레이·결과 화면 확인. 디버그 표시에서 렌더 배율 ×1.5, 순간 FPS 약 60 |
+| 실제 전체화면 | 세로에서 전체화면 진입 시 가로 전환. 전체화면 안에서 일시정지·재개·재시작·나가기 동작 확인 |
+| 저장 복원 | 두 판 진행 후 Chrome 새로고침. `LOCAL SAVE`, 최고 기록 4, 플레이 횟수 2 유지 |
+| 전체화면 종료 방향 | Chrome 도구모음은 돌아왔으나 페이지와 기기는 가로 방향을 유지함. 종료 시 자동 회전은 꺼져 있었고(`accelerometer_rotation=0`, `user_rotation=1`), 테스트 시작 전 설정값은 기록하지 않아 OS 설정과 API 동작을 분리하지 못함 |
+
+- 기기 해상도는 세로 1080×2520, 가로 2520×1080입니다. 개발 서버를 같은 LAN의 HTTP로 열어 검사했으며 Chrome에 보안 연결이 아님이 표시됩니다. HTTPS 배포 환경에서의 실기기 동작은 별도 확인이 필요합니다.
+- 전체화면 코드는 진입 시 `screen.orientation.lock()`을 호출하지만 나갈 때 명시적으로 `unlock()`을 호출하지 않습니다. 자동 회전을 켠 상태에서 방향 복귀를 다시 확인하고, 필요하면 종료 처리에서 잠금을 해제해야 합니다.
+- 화면과 Android 접근성 UI로 동작을 확인했습니다. Chrome 콘솔/JS 오류 로그와 실제 음량 청음은 수집하지 않았으므로 오류 0건·소리 정상으로 판단하지 않습니다.
+
 ## 오류 정지·플랫폼별 빌드·공식 SDK 검사 — 2026-10-21 · macOS arm64 · Node 24.16.0
 
 | 검사                                            | 결과                                                            |

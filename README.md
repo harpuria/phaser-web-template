@@ -51,9 +51,9 @@ npm run dev:standalone          # 외부 SDK 없이 개발
 npm run build:standalone        # 자체 호스팅용 dist 생성
 npm run build:crazygames        # CrazyGames 제출용 dist 생성
 npm run check                   # lint + format + 단위 검사 + typecheck + 배포 빌드
-npx playwright install chromium # E2E 첫 실행 전 한 번
-npm run test:e2e                # 데스크톱/모바일 Chromium 검사
-E2E_PREVIEW=1 npm run test:e2e  # 배포 빌드 검사 (먼저 npm run build:crazygames)
+npx playwright install chromium firefox webkit # E2E 첫 실행 전 한 번
+npm run test:e2e                # Chromium·Firefox·WebKit 및 모바일 Chromium 검사
+E2E_PREVIEW=1 npm run test:e2e  # 전용 CrazyGames 빌드를 생성해 검사
 npm run test:e2e:standalone     # 자체 호스팅용 배포 빌드·저장·SDK 미요청 검사
 npm run test:sdk                # 공식 CDN SDK local 검사 (네트워크 필요)
 npm run preview                 # dist를 로컬에서 확인

@@ -56,6 +56,7 @@ export class App {
   onState = () => {};
   private cleanup: (() => void)[] = [];
   private playing = false;
+  private settingsListeners = new Set<(settings: Readonly<Settings>) => void>();
 
   constructor(context: PlatformContext) {
     this.platform = context.platform;
@@ -134,9 +135,24 @@ export class App {
   get transitionMs() {
     return this.settings.data.reducedMotion ? 0 : gameConfig.transitionMs;
   }
+  /** Apply settings to live consumers after updating or resetting the store. */
+  applySettings() {
+    const settings = this.settings.data;
+    this.audio?.apply(settings);
+    this.settingsListeners.forEach((listener) => listener(settings));
+    this.onState();
+  }
+  listenSettings(listener: (settings: Readonly<Settings>) => void): () => void {
+    this.settingsListeners.add(listener);
+    listener(this.settings.data);
+    return () => {
+      this.settingsListeners.delete(listener);
+    };
+  }
   destroy() {
     this.flush();
     this.cleanup.forEach((fn) => fn());
+    this.settingsListeners.clear();
     this.platform.destroy();
     this.audio?.destroy();
   }

@@ -88,6 +88,54 @@ describe('versioned persistence', () => {
     expect(store.flush()).toBe(false);
     expect(store.status).toBe('unavailable');
   });
+  it('retries a failed write with the latest progress without deleting the original', () => {
+    const storage = new MemoryStorage();
+    const original = JSON.stringify({
+      version: 1,
+      data: { best: 8, rounds: 2 },
+    });
+    storage.setItem('save', original);
+    const write = storage.setItem.bind(storage);
+    let failing = true;
+    storage.setItem = (key, value) => {
+      if (failing) throw new Error('Temporary write failure');
+      write(key, value);
+    };
+    storage.removeItem = () => {
+      throw new Error('Must not delete progress');
+    };
+    const store = new Store(storage, 'save', progressSchema);
+    store.update(() => ({ best: 10, rounds: 3 }));
+    expect(store.flush()).toBe(false);
+    expect(store.flush()).toBe(false);
+    expect(storage.getItem('save')).toBe(original);
+    store.update((data) => ({ ...data, rounds: data.rounds + 1 }));
+    failing = false;
+    expect(store.flush()).toBe(true);
+    expect(store.status).toBe('ready');
+    expect(new Store(storage, 'save', progressSchema).data).toEqual({
+      best: 10,
+      rounds: 4,
+    });
+  });
+  it('never retries writes after an initial read failure, even if storage recovers', () => {
+    const storage = new MemoryStorage();
+    const original = JSON.stringify({
+      version: 1,
+      data: { best: 8, rounds: 2 },
+    });
+    storage.setItem('save', original);
+    const read = storage.getItem.bind(storage);
+    storage.getItem = () => {
+      throw new Error('Read denied');
+    };
+    const store = new Store(storage, 'save', progressSchema);
+    storage.getItem = read;
+    store.update(() => ({ best: 1, rounds: 1 }));
+    expect(store.flush()).toBe(false);
+    expect(store.flush()).toBe(false);
+    expect(storage.getItem('save')).toBe(original);
+  });
   it('resets progress without touching settings', () => {
     const storage = new MemoryStorage();
     storage.setItem('settings', 'keep');

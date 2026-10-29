@@ -28,6 +28,7 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 의존 방향: `game/`, `ui/` → `core/`, `services/`. `core/`와 `services/`는 `game/`이나 데모 asset 키를 알지 않습니다.
 `App`은 `game/`의 schema와 `Session`을 조립만 하고, 점수·보상 규칙은 `game/`에 둡니다.
 게임은 외부 SDK를 직접 부르지 않고 `app.platform`을 거칩니다.
+ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import/re-export·동적 import·타입 import를 차단합니다. 필요한 데이터와 callback은 `app.ts`에서 주입합니다.
 
 ## 용어
 
@@ -75,6 +76,7 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 | unavailable    | 접근 거부/용량 부족. 메모리로 플레이, 저장 실패 표시 |
 
 - 실패 상태에서도 `update`는 메모리 값을 바꾸지만 `false`를 반환합니다.
+- 정상 읽기(빈 저장 포함) 후 쓰기만 실패했다면 `canRetry`가 true입니다. 다음 `flush()`가 최신 메모리 값을 재시도하며 성공하면 `ready`로 복구합니다. 자동 저장과 Shell의 저장 다시 시도 버튼이 같은 경로를 사용합니다. 초기 읽기 실패·손상·미래 버전·저장소 미제공에는 재시도를 허용하지 않습니다.
 - 원본을 지우는 것은 사용자가 확인한 `reset()`뿐입니다. 게임 저장과 설정은 다른 키라서 서로 지우지 않습니다.
 - 저장소는 생성 시 주입합니다. CrazyGames local/실환경은 SDK Data, SDK disabled/명시적 비활성화는 localStorage, SDK 초기화 실패는 쓰기 불가입니다. Data 실패 후 localStorage로 전환하지 않습니다.
 - localStorage는 origin(도메인·포트)별·브라우저별로 분리됩니다. 새 게임은 `storagePrefix`를 바꿔 같은 도메인의 다른 게임과 충돌을 피합니다.
@@ -87,7 +89,8 @@ tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐�
 - 입력은 Phaser world 좌표를 쓰고, 캔버스(`#game`)만 `touch-action: none`입니다. 키보드 이벤트는 `#game`에서만 받습니다.
 - `Scale.EXPAND` + 안전 영역(`gameConfig.width`×`height`). `core/viewport.ts`의 `centerSafeArea`가 카메라를 렌더 배율 k로 zoom하고, 화면 크기 변경 때마다 안전 영역 중앙에 맞춥니다.
 - 게임 화소 크기는 `안전 영역 × k`(`App.renderScale`, 시작 시 한 번 결정). 텍스처는 k배로 준비해 `1/k`로 줄여 씁니다.
-- 전체화면 대상은 캔버스와 오버레이를 감싼 `#stage`입니다.
+- 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함하는 게임 카드 `#stage`입니다. 전체화면에서도 시작·일시정지·재개·메뉴·재시작이 가능합니다.
+- 설정을 갱신하거나 초기화한 뒤 `app.applySettings()`를 호출합니다. 오디오와 `app.listenSettings()` 구독자에 즉시 반영하고 Shell을 갱신합니다. 구독은 현재 설정을 즉시 전달하며 반환한 해제 함수를 장면 shutdown 때 호출합니다. 메뉴 반복 tween과 CSS 전환은 저장된 `reducedMotion`을 따릅니다. OS 설정은 새 설정의 기본값으로 사용합니다.
 
 ## 서비스
 

@@ -231,7 +231,22 @@ h2 {
   z-index: 1;
 }
 #stage:fullscreen {
-  justify-content: center;
+  width: 100vw;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+#stage:fullscreen .stage-heading,
+#stage:fullscreen #fullscreen {
+  display: none;
+}
+#stage:fullscreen .canvas-wrap {
+  min-height: 0;
+  min-width: 0;
+}
+#stage:fullscreen .game-toolbar {
+  flex-shrink: 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 #exit-fullscreen {
   display: none;
@@ -678,8 +693,8 @@ dialog .primary {
     display: block;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-  }
+#app[data-reduced-motion='true'] * {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
 }
