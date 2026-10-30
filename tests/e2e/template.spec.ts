@@ -142,7 +142,10 @@ test('a temporary save failure can be retried without losing the round', async (
     };
   });
   await page.getByRole('button', { name: '플레이 시작' }).click();
-  await expect(page.locator('#mode-label')).toHaveText('RESULT');
+  // The round runs on game time; slow runners clamp frame delta (see above).
+  await expect(page.locator('#mode-label')).toHaveText('RESULT', {
+    timeout: 20_000,
+  });
   await expect(page.locator('#rounds')).toHaveText('1');
   await page.getByRole('button', { name: '저장 다시 시도' }).click();
   await expect(page.locator('#storage-status')).toContainText('자동으로 저장');
