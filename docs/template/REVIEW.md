@@ -118,7 +118,7 @@ E2E는 문구 대신 `data-testid`나 역할·id로 요소를 찾습니다(11번
 | `npm outdated`, `npm view`, `npm audit`   | 위 7번 표                                                                                    |
 | 배포 빌드 화면 크기 측정 (Chromium)       | 1040×585: 문서 1157px·캔버스 702×395, 844×390: 문서 1048px·캔버스 643×390                    |
 | 다른 origin 스크립트 오류 재현 (Chromium) | 플레이 중 `Script error.` 치명 정지                                                          |
-| E2E (Chromium desktop·Pixel 7만)          | 실행 중. 결과는 후속 커밋에서 기록                                                           |
+| E2E (Chromium desktop·Pixel 7만)          | 개발 38개 통과·8개 skip, `E2E_PREVIEW=1` 38개 통과·8개 skip, standalone 2개 통과             |
 
 미검증: Firefox·WebKit E2E(이 환경에 브라우저 없음), `npm run test:sdk`와 CrazyGames 최신 요구사항(이 환경에서 `sdk.crazygames.com`, `docs.crazygames.com` 접근 거절), 실기기·CrazyGames Preview.
 
