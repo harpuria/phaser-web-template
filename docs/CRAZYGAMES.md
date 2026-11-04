@@ -10,7 +10,7 @@
 | CrazyGames  | `npm run dev:crazygames` | `npm run build:crazygames` |
 | 자체 호스팅 | `npm run dev:standalone` | `npm run build:standalone` |
 
-기존 `npm run dev` / `build`는 CrazyGames가 기본입니다. `.env.local` 또는 실행 환경의 `VITE_PLATFORM=standalone` / `crazygames`로 기본 대상을 바꿀 수 있습니다.
+`npm run dev`는 CrazyGames가 기본입니다. `npm run build`는 대상을 명시하지 않으면 중단합니다. `.env.local` 또는 실행 환경의 `VITE_PLATFORM=standalone` / `crazygames`로 기본 대상을 바꿀 수 있습니다.
 전용 명령은 Vite의 플랫폼 mode를 명시하며, 환경 변수와 충돌하거나 알 수 없는 값이 있으면 중단합니다. 예를 들어 `VITE_PLATFORM=standalone`을 설정했다면 CrazyGames 빌드 전에 이 값을 바꾸거나 제거합니다.
 선택 결과는 `src/config/game.ts`의 `platform`과 `services.crazyGames.enabled`에 반영됩니다. 별도 호스팅용 빌드는 SDK 장애와 관계없이 로컬 저장합니다.
 
@@ -26,6 +26,14 @@
 같은 네트워크의 휴대폰에서 IP 주소로 접속할 때는 `?useLocalSdk=true`로 SDK local 환경을 요청합니다.
 SDK 없이 개발하거나 다른 플랫폼용으로 배포하려면 standalone 명령을 씁니다.
 실제 SDK는 `https://sdk.crazygames.com/crazygames-sdk-v3.js`에서 불러옵니다. 오프라인 개발은 `npm run dev:standalone`으로 실행합니다.
+
+## 화면 배치와 언어
+
+- CrazyGames는 게임을 iframe으로 보여 줍니다. `gameConfig.layout: 'auto'`는 iframe 안에서 `embed` 배치를 써서 게임 카드가 iframe 전체를 채우고 페이지 스크롤·소개 문구·사이드바·외부 링크가 없습니다. 제출용 게임은 `'embed'`로 고정해도 됩니다.
+- 로컬에서는 `npm run dev:crazygames` 후 `?layout=embed`로 같은 배치를 확인합니다. `embed.spec.ts`가 1040×585 등 iframe 크기에서 스크롤이 없고 조작 버튼이 화면 안에 있는지 검사합니다.
+- 전체화면 버튼은 iframe이 전체화면을 허용할 때만 보입니다. 플랫폼이 자체 전체화면 버튼을 제공하면 게임의 버튼 유지 여부를 요구사항에 맞춰 정합니다.
+- 문구는 브라우저 언어를 따르며 기본 대체 언어는 영어입니다(`gameConfig.locale`, `fallbackLocale`). 전 세계 이용자를 위해 영어 문구를 유지합니다.
+- 광고·SDK·브라우저 확장 등 다른 origin 스크립트의 오류는 게임을 멈추지 않습니다. 게임 코드의 오류만 오류 화면으로 멈춥니다.
 
 ## 장면과 일시정지
 
@@ -67,7 +75,7 @@ SDK가 disabled인 별도 호스팅에서만 기존 브라우저 저장을 씁�
 2. `dist/` 내용 전체를 zip으로 묶습니다. zip 루트에 `index.html`이 있어야 합니다. Vite `base: './'`로 번들 asset 경로는 상대 경로입니다.
 3. [Developer Portal](https://developer.crazygames.com/)에서 게임을 만들고 빌드를 올립니다.
 4. **Progress Save에서 `Yes, using the Data Module from the CrazyGames SDK`를 선택합니다.** 끄면 Data API가 오류를 내며 이 템플릿은 저장 보호 상태가 됩니다.
-5. Preview에서 gameplay 이벤트, 계정별 저장 복원, SDK 음소거, 광고 실패 후 재개를 확인합니다. Full Launch 후 광고 설정을 바꾸고 다시 검사합니다.
+5. Preview에서 gameplay 이벤트, 계정별 저장 복원, SDK 음소거, 광고 실패 후 재개, iframe을 꽉 채우는 배치와 스크롤 없음을 확인합니다. Full Launch 후 광고 설정을 바꾸고 다시 검사합니다.
 
 Data 저장 한도는 게임 전체 1MB입니다. `Store.flush()` 성공은 SDK가 쓰기를 받아들였다는 뜻이며 서버 동기화 완료를 보장하지 않습니다.
 로그인 사용자는 기기 간 동기화, 게스트는 SDK가 관리하는 로컬 저장을 사용합니다. Data 사용 게임은 로그인 시 플랫폼이 게임을 다시 로드합니다.

@@ -101,7 +101,7 @@ test('SDK initializes before Data, then reports loading, gameplay, pause, result
   await expect(page.locator('#best')).toHaveText('12');
   await expect(page.locator('#rounds')).toHaveText('3');
   await expect(page.locator('#storage-kind')).toHaveText('CRAZYGAMES SAVE');
-  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
+  await expect(page.locator('#play')).toBeEnabled();
   expect(await events(page)).toEqual([
     'init',
     'get:phaser-web-template:save',
@@ -109,16 +109,14 @@ test('SDK initializes before Data, then reports loading, gameplay, pause, result
     'loadingStart',
     'loadingStop',
   ]);
-  await expect(
-    page.getByRole('button', { name: '보상형 광고 테스트' }),
-  ).toBeHidden();
-  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await expect(page.locator('#reward')).toBeHidden();
+  await page.locator('#play').click();
   await expect(page.locator('#mode-label')).toHaveText('PLAYING');
-  await page.getByRole('button', { name: '일시정지', exact: true }).click();
-  await page.getByRole('button', { name: '설정 열기' }).click();
-  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await page.locator('#pause').click();
+  await page.locator('#settings').click();
+  await page.locator('#settings-done').click();
   await expect(page.locator('#pause-overlay')).toBeVisible();
-  await page.getByRole('button', { name: '계속하기' }).click();
+  await page.locator('#pause').click();
   await expect(page.locator('#mode-label')).toHaveText('RESULT', {
     timeout: 15_000,
   });
@@ -144,19 +142,17 @@ test('local demo ads block interaction, recover from failure, and keep demo comp
 }) => {
   await installSdk(page, 'local');
   await page.goto('/');
-  const request = page.getByRole('button', { name: '보상형 광고 테스트' });
+  const request = page.locator('#reward');
   await request.click();
-  await expect(
-    page.getByRole('button', { name: '플레이 시작' }),
-  ).toBeDisabled();
-  await expect(page.getByRole('button', { name: '설정 열기' })).toBeDisabled();
+  await expect(page.locator('#play')).toBeDisabled();
+  await expect(page.locator('#settings')).toBeDisabled();
   await page.evaluate(() =>
     (window as unknown as SdkProbe).sdkAdCallbacks.adError({
       code: 'unfilled',
       message: '',
     }),
   );
-  await expect(page.getByRole('status')).toContainText('unavailable');
+  await expect(page.locator('#notice')).toContainText('unavailable');
   await expect(request).toBeEnabled();
   await request.click();
   await page.evaluate(() => {
@@ -165,8 +161,8 @@ test('local demo ads block interaction, recover from failure, and keep demo comp
     sdkAdCallbacks.adFinished();
     sdkAdCallbacks.adFinished();
   });
-  await expect(page.getByRole('status')).toContainText('completed (Mock');
-  await expect(page.getByRole('button', { name: '플레이 시작' })).toBeEnabled();
+  await expect(page.locator('#notice')).toContainText(/completed \(Mock/);
+  await expect(page.locator('#play')).toBeEnabled();
 });
 
 test('SDK cloud corruption remains protected through gameplay', async ({
@@ -175,7 +171,7 @@ test('SDK cloud corruption remains protected through gameplay', async ({
   await installSdk(page, 'crazygames', true);
   await page.goto('/?round=1');
   await expect(page.locator('#storage-status')).toContainText('corrupt');
-  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await page.locator('#play').click();
   await expect(page.locator('#mode-label')).toHaveText('RESULT', {
     timeout: 15_000,
   });
@@ -192,10 +188,11 @@ test('failed SDK loading leaves a playable session without overwriting local pro
     localStorage.setItem('phaser-web-template:save', 'original'),
   );
   await page.goto('/?round=1');
-  await expect(page.locator('#storage-status')).toContainText(
-    '플랫폼에 연결하지 못해',
+  await expect(page.locator('#storage-status')).toHaveAttribute(
+    'data-state',
+    'platform-unavailable',
   );
-  await page.getByRole('button', { name: '플레이 시작' }).click();
+  await page.locator('#play').click();
   await expect(page.locator('#mode-label')).toHaveText('RESULT', {
     timeout: 15_000,
   });
@@ -210,7 +207,7 @@ for (const kind of ['exception', 'rejection'] as const) {
   }) => {
     await installSdk(page);
     await page.goto('/?round=3');
-    await page.getByRole('button', { name: '플레이 시작' }).click();
+    await page.locator('#play').click();
     await expect(page.locator('#mode-label')).toHaveText('PLAYING');
     await page.evaluate((failure) => {
       setTimeout(() => {
@@ -243,12 +240,10 @@ for (const kind of ['exception', 'rejection'] as const) {
     expect(
       (await events(page)).filter((event) => event.startsWith('set:')),
     ).toEqual([]);
-    await page.getByRole('button', { name: '새로고침' }).click();
+    await page.locator('#reload').click();
     await expect(page.locator('#mode-label')).toHaveText('MENU');
     await expect(page.locator('#error-overlay')).toBeHidden();
-    await expect(
-      page.getByRole('button', { name: '플레이 시작' }),
-    ).toBeEnabled();
+    await expect(page.locator('#play')).toBeEnabled();
   });
 }
 
@@ -257,8 +252,8 @@ test('a fatal error closes settings so recovery remains accessible', async ({
 }) => {
   await installSdk(page);
   await page.goto('/');
-  await page.getByRole('button', { name: '플레이 시작' }).click();
-  await page.getByRole('button', { name: '설정 열기' }).click();
+  await page.locator('#play').click();
+  await page.locator('#settings').click();
   await expect(page.locator('#settings-dialog')).toBeVisible();
   await page.evaluate(() => {
     setTimeout(() => {
@@ -268,6 +263,6 @@ test('a fatal error closes settings so recovery remains accessible', async ({
   await expect(page.locator('#error-overlay')).toContainText('fatal settings');
   await expect(page.locator('#settings-dialog')).not.toBeVisible();
   await expect(page.locator('#mode-label')).toHaveText('PAUSED');
-  await page.getByRole('button', { name: '새로고침' }).click();
+  await page.locator('#reload').click();
   await expect(page.locator('#mode-label')).toHaveText('MENU');
 });

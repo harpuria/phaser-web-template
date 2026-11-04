@@ -37,8 +37,9 @@ export class MenuScene extends Phaser.Scene {
         letterSpacing: 5,
       })
       .setOrigin(0.5);
+    const text = this.app.text.game;
     this.add
-      .text(cx, 202, '작은 시작, 새로운 세계', {
+      .text(cx, 202, text.menuTitle, {
         fontFamily: 'sans-serif',
         fontSize: '40px',
         fontStyle: 'bold',
@@ -46,7 +47,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(cx, 258, '별을 모으는 짧은 게임으로 템플릿을 둘러보세요.', {
+      .text(cx, 258, text.menuSubtitle, {
         fontFamily: 'sans-serif',
         fontSize: '20px',
         color: '#94a3b8',
@@ -164,7 +165,7 @@ export class GameScene extends Phaser.Scene {
       .rectangle(W / 2, H / 2, W * 3, H * 3, 0x101827, 0.92)
       .setDepth(10);
     this.add
-      .text(W / 2, 230, `${score}개의 별을 모았어요`, {
+      .text(W / 2, 230, this.app.text.game.result(score), {
         fontFamily: 'sans-serif',
         fontSize: '42px',
         fontStyle: 'bold',
@@ -174,8 +175,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(11);
     const message =
       this.app.save.status === 'ready'
-        ? '기록을 저장했습니다. 다시 도전해 보세요!'
-        : '기록을 저장하지 못했습니다. 저장 상태를 확인해 주세요.';
+        ? this.app.text.game.saved
+        : this.app.text.game.saveFailed;
     this.add
       .text(W / 2, 300, message, {
         fontFamily: 'sans-serif',

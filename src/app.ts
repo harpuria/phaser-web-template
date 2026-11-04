@@ -6,7 +6,9 @@ import { settingsSchema, type Settings } from './core/settings';
 import { Store } from './core/store';
 import { progressSchema, type Progress } from './game/save';
 import { chooseRenderScale } from './core/renderScale';
+import { releaseOrientationOnExit } from './core/screen';
 import { Session } from './game/session';
+import { resolveStrings } from './game/strings';
 import type { PlatformContext } from './services/bootstrap';
 
 export class App {
@@ -44,6 +46,13 @@ export class App {
   /** 개발 서버에서 `?debug`: 물리 충돌 영역과 렌더 배율·FPS 표시. 배포 빌드에서는 항상 false. */
   readonly debug =
     import.meta.env.DEV && new URLSearchParams(location.search).has('debug');
+  /** 사용자에게 보여줄 언어와 문구(`src/game/strings.ts`). 시작 시 한 번 정한다. */
+  readonly strings = resolveStrings(
+    gameConfig.locale,
+    gameConfig.fallbackLocale,
+  );
+  readonly locale = this.strings.locale;
+  readonly text = this.strings.text;
   /** 게임이 정의한 진행 중 상태(점수, 화면 모드 등). 저장하지 않는다. */
   readonly session = new Session();
   game?: Phaser.Game;
@@ -83,6 +92,10 @@ export class App {
     this.playing = active;
     this.syncGameplay();
   }
+  /** 장면이 `setGameplay(true)`로 알린 조작 가능한 플레이 중인지. 일시정지 여부와 무관하다. */
+  get gameplayActive() {
+    return this.playing;
+  }
   private syncGameplay() {
     // CrazyGames handles visibility/focus itself; only intentional breaks are reported.
     this.platform.setGameplay(
@@ -96,7 +109,7 @@ export class App {
   /** Keep the first failure latched until reload; failed state must not be saved. */
   fail(message: string) {
     if (this.fatalError) return;
-    this.fatalMessage = message || '알 수 없는 오류';
+    this.fatalMessage = message || this.text.system.unknownError;
     if (this.game) this.game.input.enabled = false;
     this.pause.set('fatal', true);
   }
@@ -110,6 +123,7 @@ export class App {
       this.platform.listenMute((muted) =>
         this.audio?.setExternalMute('platform', muted),
       ),
+      releaseOrientationOnExit(game.scale),
     );
     const visibility = () => {
       if (document.hidden) this.flush();

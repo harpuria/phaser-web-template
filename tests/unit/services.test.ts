@@ -95,6 +95,64 @@ it('reports uncaught errors and rejections until stopped', () => {
   expect(messages).toEqual(['boom', 'lost']);
 });
 
+it('ignores errors from other origins but keeps game errors fatal', () => {
+  const origin = 'https://game.example';
+  const target = new EventTarget();
+  const fatal: string[] = [];
+  const ignored: string[] = [];
+  const stop = watchUncaughtErrors((message) => fatal.push(message), target, {
+    origin,
+    onIgnored: (message) => ignored.push(message),
+  });
+  const error = (fields: Record<string, unknown>) =>
+    target.dispatchEvent(Object.assign(new Event('error'), fields));
+  const rejection = (reason: unknown) =>
+    target.dispatchEvent(
+      Object.assign(new Event('unhandledrejection'), { reason }),
+    );
+  const withStack = (message: string, stack: string) =>
+    Object.assign(new Error(message), { stack });
+
+  // Muted cross-origin script error, ad/SDK script and browser extension.
+  error({ message: 'Script error.', filename: '', error: null });
+  error({
+    message: 'ads',
+    filename: 'https://sdk.example/sdk.js',
+    error: new Error('ads'),
+  });
+  error({ message: 'ext', filename: 'chrome-extension://id/content.js' });
+  rejection(
+    withStack('sdk', 'Error: sdk\n    at https://sdk.example/sdk.js:1:2'),
+  );
+  rejection(withStack('ff', 'run@moz-extension://id/inject.js:3:4'));
+  // Game code, including a game callback called from another script.
+  error({
+    message: 'own',
+    filename: `${origin}/assets/index.js`,
+    error: new Error('own'),
+  });
+  error({ message: 'relative', filename: '/assets/index.js' });
+  error({ message: 'unknown', filename: '', error: new Error('unknown') });
+  rejection(
+    withStack(
+      'mixed',
+      `Error: mixed\n    at ${origin}/assets/index.js:9:1\n    at https://sdk.example/sdk.js:1:2`,
+    ),
+  );
+  rejection(withStack('no-location', 'Error: no-location'));
+  rejection('plain');
+  stop();
+  expect(ignored).toEqual(['Script error.', 'ads', 'ext', 'sdk', 'ff']);
+  expect(fatal).toEqual([
+    'own',
+    'relative',
+    'unknown',
+    'mixed',
+    'no-location',
+    'plain',
+  ]);
+});
+
 it('rejects malformed settings, including nonfinite and out-of-range audio', () => {
   const schema = settingsSchema();
   expect(schema.validate(schema.defaults())).toBe(true);

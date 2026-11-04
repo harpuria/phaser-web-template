@@ -1,11 +1,21 @@
+import { version } from '../../package.json';
 import { resolvePlatformTarget } from './platform';
 
 const platform = resolvePlatformTarget(import.meta.env.VITE_PLATFORM);
 
 export const gameConfig = {
   title: 'Phaser Web Template',
-  version: '0.3.0',
+  /** 템플릿·게임 버전. 원본은 package.json의 version이다. */
+  version,
   platform,
+  /** 'auto'는 브라우저 언어에서 지원 언어를 고르고, 없으면 fallbackLocale을 쓴다. 문구는 src/game/strings.ts. */
+  locale: 'auto' as 'auto' | 'ko' | 'en',
+  fallbackLocale: 'en' as 'ko' | 'en',
+  /**
+   * HTML 배치. 'embed'는 게임 화면이 창 전체를 채우고 페이지 스크롤이 없다(CrazyGames·itch.io 같은 iframe 배포).
+   * 'page'는 데모 소개 페이지. 'auto'는 iframe 안이면 embed, 아니면 page. `?layout=embed`로 바꿔 확인할 수 있다.
+   */
+  layout: 'auto' as 'auto' | 'page' | 'embed',
   storagePrefix: 'phaser-web-template', // 새 게임마다 고유한 값으로 변경
   width: 960,
   height: 540,

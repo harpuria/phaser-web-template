@@ -25,7 +25,7 @@ for (const [name, width, height, touch] of viewports) {
     const page = await context.newPage();
     await disableSdk(page);
     await page.goto('/');
-    const play = page.getByRole('button', { name: '플레이 시작' });
+    const play = page.locator('#play');
     await expect(play).toBeEnabled();
     await play.click();
     await expect(page.locator('#mode-label')).toHaveText('PLAYING');

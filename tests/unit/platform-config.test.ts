@@ -26,3 +26,18 @@ it('rejects conflicting platform modes instead of building for an unexpected hos
   );
   expect(resolvePlatformTarget('standalone', 'standalone')).toBe('standalone');
 });
+
+it('requires an explicit target for deployment builds', () => {
+  expect(() => resolvePlatformTarget(undefined, 'production', true)).toThrow(
+    'Choose a deployment target',
+  );
+  expect(resolvePlatformTarget(undefined, 'standalone', true)).toBe(
+    'standalone',
+  );
+  expect(resolvePlatformTarget(undefined, 'crazygames', true)).toBe(
+    'crazygames',
+  );
+  expect(resolvePlatformTarget('standalone', 'production', true)).toBe(
+    'standalone',
+  );
+});

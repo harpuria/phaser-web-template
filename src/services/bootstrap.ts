@@ -11,7 +11,8 @@ export interface PlatformContext {
   platform: PlatformServices;
   storage: StoragePort | undefined;
   storageKind: 'local' | 'crazygames' | 'unavailable';
-  warning: string;
+  /** 사용자에게 알릴 플랫폼 문제. 문구는 UI가 정한다(`'platform-unavailable'`: SDK 연결 실패로 저장 불가). */
+  warning: '' | 'platform-unavailable';
 }
 
 /** Initialize before constructing stores: the SDK preloads cloud progress in init(). */
@@ -44,8 +45,7 @@ export async function createPlatform(
       platform: new PlatformServices(options, new UnavailableAdapter()),
       storage: undefined,
       storageKind: 'unavailable',
-      warning:
-        '플랫폼에 연결하지 못해 기록을 저장할 수 없습니다. 새로고침해 다시 시도해 주세요.',
+      warning: 'platform-unavailable',
     };
   }
 }

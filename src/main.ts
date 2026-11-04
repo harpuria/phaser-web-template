@@ -7,9 +7,15 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { GameScene, MenuScene } from './game/scenes';
 import { Shell } from './ui/Shell';
 import { createPlatform } from './services/bootstrap';
+import { resolveStrings } from './game/strings';
 import './style.css';
 
+const { locale, text } = resolveStrings(
+  gameConfig.locale,
+  gameConfig.fallbackLocale,
+);
 document.title = gameConfig.title;
+document.documentElement.lang = locale;
 let disposed = false;
 let teardown = () => {};
 if (import.meta.hot)
@@ -71,7 +77,6 @@ void start().catch((error: unknown) => {
   if (disposed) return;
   console.error('[Startup]', error);
   const root = document.getElementById('app')!;
-  root.textContent =
-    '게임을 시작하지 못했습니다. 새로고침해 다시 시도해 주세요.';
+  root.textContent = text.system.startupFailed;
   root.setAttribute('role', 'alert');
 });
