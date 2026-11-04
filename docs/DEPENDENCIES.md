@@ -1,18 +1,18 @@
 # 의존성과 출처
 
-확인일: npm 의존성 2026-10-04, CI action 2026-10-07, CrazyGames SDK 2026-10-21. npm 전이 의존성은 `package-lock.json`이 기준입니다.
+확인일: npm 의존성 2026-11-04, CI action 2026-10-07, CrazyGames SDK 2026-10-21. npm 전이 의존성은 `package-lock.json`이 기준입니다.
 
 | 구성                 | 고정 버전            | 라이선스                   | 역할                  |
 | -------------------- | -------------------- | -------------------------- | --------------------- |
 | Phaser               | 4.2.1                | MIT                        | 게임 런타임           |
 | TypeScript           | 6.0.3                | Apache-2.0                 | 정적 타입 검사        |
-| Vite                 | 8.3.2                | MIT                        | 개발 서버·번들        |
-| Vitest               | 5.0.3                | MIT                        | 단위 검사             |
-| ESLint / @eslint/js  | 10.12.0 / 10.0.1     | MIT                        | 린트                  |
-| typescript-eslint    | 8.71.0               | MIT                        | TypeScript 린트       |
-| Prettier             | 3.9.9                | MIT                        | 포맷                  |
-| @playwright/test     | 1.63.0               | Apache-2.0                 | 브라우저 검사         |
-| @types/node          | 26.6.4               | MIT                        | 도구 설정의 Node 타입 |
+| Vite                 | 8.3.5                | MIT                        | 개발 서버·번들        |
+| Vitest               | 5.1.0                | MIT                        | 단위 검사             |
+| ESLint / @eslint/js  | 10.14.0 / 10.0.1     | MIT                        | 린트                  |
+| typescript-eslint    | 8.72.1               | MIT                        | TypeScript 린트       |
+| Prettier             | 3.9.10               | MIT                        | 포맷                  |
+| @playwright/test     | 1.64.1               | Apache-2.0                 | 브라우저 검사         |
+| @types/node          | 24.19.2              | MIT                        | 도구 설정의 Node 타입 |
 | CrazyGames HTML5 SDK | v3 공식 CDN endpoint | CrazyGames Developer Terms | 플랫폼·광고·Data 저장 |
 
 npm 런타임 의존성은 Phaser 하나이고 나머지는 devDependencies입니다. CrazyGames는 외부 스크립트로 로드하며 npm 패키지/lockfile 변경은 없습니다.
@@ -23,8 +23,19 @@ npm 런타임 의존성은 Phaser 하나이고 나머지는 devDependencies입�
 확인한 CDN 응답의 `Last-Modified`는 `2026-10-12T07:32:41Z`, 파일 SHA-256은 `d4c44671cafbb694a0fd054078303242681bdf1b5908d6fb9f766d1de3f25911`입니다. 이는 확인 당시 파일의 식별값이며 버전 고정이나 무결성 강제 설정은 아닙니다.
 초기화·로컬 광고·Data 저장 복원 결과와 미검증 범위는 [검증 기록](template/VALIDATION.md)에 남깁니다.
 설치 근거는 [SDK v3 공식 문서](https://docs.crazygames.com/sdk/intro/), 사용 조건은 [Developer Terms](https://files.crazygames.com/documents/developer_terms_20250818.pdf)입니다.
-Node.js는 22.12 이상(Vite 8 요구 사항)이 필요하며, 권장 버전은 `.nvmrc`의 24입니다.
+Node.js는 22.12 이상(Vite 8 요구 사항)이 필요하며, 권장 버전은 `.nvmrc`의 24입니다. CI는 Node 24 전체 검사와 별도로 Node 22.12.0에서 `npm run check`를 실행합니다.
 CI는 `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` 모두 v7을 사용합니다.
+
+## 2026-11-04 갱신
+
+- npm `latest` 기준으로 Vite 8.3.5, Vitest 5.1.0, ESLint 10.14.0, typescript-eslint 8.72.1, Prettier 3.9.10, Playwright 1.64.1로 올렸습니다. Phaser 4.2.1은 그대로 최신 안정판입니다(GitHub Releases Latest, 4.3.0은 master에서 미배포).
+- Vitest 5.1.0(2026-11-02)과 ESLint 10.14.0(2026-10-30)은 배포 1주 이내 버전입니다. 문제가 생기면 5.0.5 / 10.13.0으로 되돌립니다.
+- `@types/node`는 26에서 **24.x**로 내렸습니다. 타입이 실행 Node(`.nvmrc` 24, 최소 22.12)보다 새 API를 허용하지 않게 하기 위해서입니다.
+- **TypeScript 7.0.2는 보류**합니다. typescript-eslint 8.72.1의 peer 범위가 `typescript >=4.8.4 <6.1.0`이라 6.0.3을 유지합니다. typescript-eslint가 7을 지원하면 함께 올립니다. Dependabot도 TypeScript major는 제외합니다.
+- `npm audit --omit=dev`는 0건입니다. 전체 `npm audit`은 ESLint·typescript-eslint가 쓰는 `minimatch@10.2.6`의 moderate 1건(GHSA-g3hv-75wg-m249)을 보고합니다. 개발 도구에만 해당하며 상위 패키지가 `minimatch@11`을 허용하면 해소됩니다. `npm audit fix --force`는 ESLint를 깨뜨리므로 쓰지 않습니다.
+- lockfile은 npm 11(Node 24)로 갱신합니다. npm 10은 optional 패키지의 `libc` 필드를 지워 불필요한 diff를 만듭니다.
+- Playwright를 올리면 브라우저 버전도 바뀝니다. 새 환경에서는 `npx playwright install chromium firefox webkit`을 다시 실행합니다.
+- `.github/dependabot.yml`이 npm(개발 도구 minor/patch 묶음, Phaser 별도)과 GitHub Actions를 월 1회 PR로 제안합니다. 병합 전 이 문서의 표와 [검증 기록](template/VALIDATION.md)을 갱신합니다.
 
 ## Phaser 선택 근거
 

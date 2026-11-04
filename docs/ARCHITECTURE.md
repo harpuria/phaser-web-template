@@ -7,7 +7,7 @@
 ```text
 src/main.ts               Phaser 설정, 장면 등록, 오류 감시, HMR 정리
 src/app.ts                저장·설정·오디오·일시정지·서비스의 수명 소유
-src/config/game.ts        이름, 저장 키 접두사, 해상도, 시작/일시정지 장면, 기능 스위치
+src/config/game.ts        이름, 버전(package.json), 언어, 배치, 저장 키 접두사, 해상도, 시작/일시정지 장면, 기능 스위치
 src/config/platform.ts    배포 대상 검증(Vite config와 game config가 공유)
 src/core/                 게임과 무관하게 재사용하는 코드
   store.ts settings.ts      버전 있는 저장, 설정 schema
@@ -15,14 +15,17 @@ src/core/                 게임과 무관하게 재사용하는 코드
   input.ts navigation.ts    이동 입력 통합, 장면 전환
   screen.ts viewport.ts     전체화면/방향 고정, EXPAND 안전 영역 카메라·zoom
   renderScale.ts            고해상도 화면용 렌더 배율 계산(Phaser 없는 순수 함수)
-  errors.ts                 처리되지 않은 오류 감시
+  layout.ts locale.ts       page/embed 배치 결정, 브라우저 언어 선택(순수 함수)
+  errors.ts                 처리되지 않은 오류 감시(다른 origin 오류 제외)
 src/services/platform.ts  광고·결제·분석 계약, capability gate, Mock, unavailable
 src/services/bootstrap.ts SDK 초기화와 저장소 선택 (App 생성 전에 완료)
 src/services/crazygames*   CrazyGames v3 타입·로더·Adapter
 src/scenes/               공통 Boot / Preload
-src/game/                 게임 전용: 장면, 저장 schema, 진행 상태(session), asset 목록
-src/ui/Shell.ts           예제 HTML 메뉴/HUD/설정/서비스 패널 (교체 대상)
-tests/unit/ tests/e2e/    공통 경계 단위 검사 / 실제 브라우저 흐름 검사
+src/game/                 게임 전용: 장면, 저장 schema, 진행 상태(session), asset 목록, 문구(strings)
+src/ui/system.ts          HTML 공통 계약: 오류·광고 중 조작 차단, 일시정지·회전·오류 안내 (유지)
+src/ui/Shell.ts           예제 HTML 메뉴/HUD/설정/서비스 패널, page·embed 배치 (교체 대상)
+tests/unit/               공통 경계 단위 검사
+tests/e2e/                contract(공통 계약)·crazygames(SDK 경계)·embed(iframe 배치)·demo(예제 흐름)·responsive, 요소 id는 ui.ts
 ```
 
 의존 방향: `game/`, `ui/` → `core/`, `services/`. `core/`와 `services/`는 `game/`이나 데모 asset 키를 알지 않습니다.
@@ -51,7 +54,7 @@ ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import/re-ex
 5. HMR 때는 오류 감시, HTML listener, 타이머, SDK listener·진행 중 요청, 오디오, Phaser 게임을 정리합니다. SDK 초기화 도중 dispose되면 게임을 만들지 않습니다.
 
 `App`은 장면이 바뀌어도 유지됩니다. 물리·게임 객체·입력 키는 Phaser 장면 수명을 따릅니다.
-처리되지 않은 오류·Promise 거부는 `app.fail(message)`로 전달합니다. 첫 오류를 유지하고 `fatal` 이유로 플레이·오디오·SDK gameplay와 입력을 멈춥니다. 이후 `App.flush()`는 쓰지 않으며, HMR 정리·pagehide·자동 저장도 이를 따릅니다. 새로고침으로 복구합니다.
+처리되지 않은 오류·Promise 거부는 `app.fail(message)`로 전달합니다. 다른 origin(광고·플랫폼 SDK, 브라우저 확장)에서 온 오류는 경고만 남깁니다. 기준은 `ErrorEvent.filename`의 origin, 세부 정보가 가려진 `Script error.`, Promise 거부 stack의 모든 위치가 다른 origin인 경우입니다. 위치를 알 수 없는 오류는 게임 오류로 봅니다. 게임 JS를 다른 origin(CDN)에서 제공한다면 `watchUncaughtErrors`의 `origin`을 그 값으로 바꿉니다. 첫 오류를 유지하고 `fatal` 이유로 플레이·오디오·SDK gameplay와 입력을 멈춥니다. 이후 `App.flush()`는 쓰지 않으며, HMR 정리·pagehide·자동 저장도 이를 따릅니다. 새로고침으로 복구합니다.
 
 ## 일시정지
 
@@ -89,8 +92,19 @@ ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import/re-ex
 - 입력은 Phaser world 좌표를 쓰고, 캔버스(`#game`)만 `touch-action: none`입니다. 키보드 이벤트는 `#game`에서만 받습니다.
 - `Scale.EXPAND` + 안전 영역(`gameConfig.width`×`height`). `core/viewport.ts`의 `centerSafeArea`가 카메라를 렌더 배율 k로 zoom하고, 화면 크기 변경 때마다 안전 영역 중앙에 맞춥니다.
 - 게임 화소 크기는 `안전 영역 × k`(`App.renderScale`, 시작 시 한 번 결정). 텍스처는 k배로 준비해 `1/k`로 줄여 씁니다.
-- 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함하는 게임 카드 `#stage`입니다. 전체화면에서도 시작·일시정지·재개·메뉴·재시작이 가능합니다.
+- 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함하는 게임 카드 `#stage`입니다. 전체화면에서도 시작·일시정지·재개·메뉴·재시작이 가능합니다. 전체화면을 어떤 방법으로 나가도 방향 고정을 풉니다(`releaseOrientationOnExit`). 전체화면 버튼은 iframe이 전체화면을 허용할 때(`document.fullscreenEnabled`)만 보입니다.
+- 배치는 `resolveLayout`이 시작 시 한 번 정합니다. `gameConfig.layout`이 `auto`면 iframe 안은 `embed`, 단독 페이지는 `page`이며 `?layout=`이 우선합니다. `embed`는 `#stage`가 창 전체를 채우고 문서가 스크롤되지 않습니다.
+- 문구는 `App.text`(`src/game/strings.ts`)에서 읽습니다. `gameConfig.locale`이 `auto`면 브라우저 언어에서 지원 언어를 고르고, 없으면 `fallbackLocale`입니다. `core/`·`services/`는 문구를 직접 갖지 않고 상태 코드(예: `PlatformContext.warning = 'platform-unavailable'`)를 돌려줍니다.
 - 설정을 갱신하거나 초기화한 뒤 `app.applySettings()`를 호출합니다. 오디오와 `app.listenSettings()` 구독자에 즉시 반영하고 Shell을 갱신합니다. 구독은 현재 설정을 즉시 전달하며 반환한 해제 함수를 장면 shutdown 때 호출합니다. 메뉴 반복 tween과 CSS 전환은 저장된 `reducedMotion`을 따릅니다. OS 설정은 새 설정의 기본값으로 사용합니다.
+
+## HTML UI 계약
+
+`SystemUi`(`src/ui/system.ts`)는 데모 Shell과 분리된 공통 계약입니다. HTML UI를 교체해도 생성해서 `render()`를 호출합니다.
+
+- 캔버스 컨테이너에 일시정지·회전·오류 안내(새로고침)와 전체화면 나가기 버튼을 붙입니다.
+- `[data-game-control]` 요소는 준비 전·광고 요청 중·오류 상태에서 비활성화합니다.
+- 오류 상태에서는 범위 안의 모든 버튼·입력(`[data-recovery]` 제외)을 막고 캔버스를 inert로 바꾸며 열린 dialog를 닫습니다.
+- UI는 자기 표시를 갱신한 뒤 `render()`를 호출하고, 추가 비활성화 조건은 그 뒤에 `disabled ||= ...`로만 더합니다.
 
 ## 서비스
 
@@ -100,7 +114,7 @@ ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import/re-ex
 `app.setGameplay()`는 조작 가능한 플레이 상태를 받고, 의도적 정지·광고 중단과 합쳐 SDK 이벤트를 보냅니다. 탭 숨김만으로는 gameplayStop을 보내지 않습니다.
 광고는 요청부터 UI/게임을 멈추고 실제 시작 callback부터 음소거하며, 종료·실패 때 광고 이유만 해제합니다. Adapter는 timeout·중복/늦은 callback·destroy 시 취소를 처리합니다.
 Basic Launch는 광고 capability를 끕니다(local 데모 제외). 지원하지 않는 결제와 자체 분석은 unavailable/false입니다. 설정과 제출 방법은 [CrazyGames 안내](CRAZYGAMES.md)를 봅니다.
-`gameConfig.platform`은 검증된 `VITE_PLATFORM`에서 결정하며, `standalone`은 SDK를 요청하지 않고 브라우저 저장소를 선택합니다. 기본값과 `--mode crazygames`는 CrazyGames를 선택합니다. 명시한 플랫폼 mode와 환경 변수의 충돌·잘못된 값은 Vite 시작·빌드에서 거절합니다.
+`gameConfig.platform`은 검증된 `VITE_PLATFORM`에서 결정하며, `standalone`은 SDK를 요청하지 않고 브라우저 저장소를 선택합니다. 개발 서버의 기본값과 `--mode crazygames`는 CrazyGames를 선택합니다. 배포 빌드(`vite build`)는 mode나 `VITE_PLATFORM`으로 대상을 명시해야 하며, 없으면 중단합니다. 명시한 플랫폼 mode와 환경 변수의 충돌·잘못된 값은 Vite 시작·빌드에서 거절합니다.
 
 실제 Adapter 도입 시:
 

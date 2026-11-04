@@ -1,0 +1,24 @@
+# 월 1회 묶음 PR로 최신화를 제안한다. 병합 전 CI(check·세 엔진 E2E·standalone)가 검증한다.
+# 정확한 버전 고정과 근거 기록 규칙은 docs/DEPENDENCIES.md를 따른다.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    versioning-strategy: increase
+    open-pull-requests-limit: 5
+    groups:
+      dev-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+      phaser:
+        patterns: [phaser]
+    ignore:
+      # typescript-eslint가 TypeScript 7을 지원할 때까지 6.x를 유지한다(docs/DEPENDENCIES.md).
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

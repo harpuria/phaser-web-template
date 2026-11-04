@@ -4,21 +4,25 @@
 
 예제(별 모으기)는 사용법을 보여주기 위한 것입니다. 아래 순서로 바꾸면 공통 기능을 그대로 쓰면서 데모를 걷어낼 수 있습니다.
 
-| 순서 | 파일                         | 할 일                                                                                                         |
-| ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 1    | `src/config/game.ts`         | `title`, `storagePrefix`, 해상도, `pixelArt`, `orientation`, `maxRenderScale`, `startScene`, `pausableScenes` |
-| 2    | `package.json`, `index.html` | package 이름, `<title>`·description·`theme-color`, `public/favicon.svg`                                       |
-| 3    | `src/game/assets.ts`         | `assetKeys`와 `queueAssets`를 내 asset으로 교체, `public/assets/demo/` 삭제                                   |
-| 4    | `src/game/save.ts`           | 저장 schema(처음이면 version 1부터)                                                                           |
-| 5    | `src/game/session.ts`        | 저장하지 않는 진행 상태(`Mode`, 점수 등)와 규칙 값                                                            |
-| 6    | `src/game/scenes.ts`         | 내 장면으로 교체. 파일을 나눠도 됩니다                                                                        |
-| 7    | `src/main.ts`                | `scene` 목록에 내 장면 등록(Boot, Preload는 맨 앞에 유지)                                                     |
-| 8    | `src/ui/Shell.ts`            | HTML 메뉴/HUD를 게임에 맞게 교체하거나 삭제(아래 참고)                                                        |
-| 9    | `tests/e2e/`                 | 데모 흐름 검사를 내 게임 흐름으로 교체. `tests/unit/`의 공통 검사는 유지                                      |
+| 순서 | 파일                         | 할 일                                                                                                                             |
+| ---- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | `docs/game/README.md`        | 게임 개요·조작·저장 항목·배포 대상을 먼저 적습니다. 템플릿 출처(버전·commit)도 여기에 기록합니다                                  |
+| 1    | `src/config/game.ts`         | `title`, `storagePrefix`, 해상도, `pixelArt`, `orientation`, `maxRenderScale`, `startScene`, `pausableScenes`, `locale`, `layout` |
+| 2    | `package.json`, `index.html` | package 이름·`version`(게임 버전으로 사용), `<title>`·description·`theme-color`, `public/favicon.svg`                             |
+| 3    | `src/game/assets.ts`         | `assetKeys`와 `queueAssets`를 내 asset으로 교체, `public/assets/demo/` 삭제                                                       |
+| 4    | `src/game/save.ts`           | 저장 schema(처음이면 version 1부터)                                                                                               |
+| 5    | `src/game/session.ts`        | 저장하지 않는 진행 상태(`Mode`, 점수 등)와 규칙 값                                                                                |
+| 5-1  | `src/game/strings.ts`        | 게임·UI 문구. 지원할 언어를 모두 채우고 쓰지 않는 언어는 `locales`에서 뺍니다                                                     |
+| 6    | `src/game/scenes.ts`         | 내 장면으로 교체. 파일을 나눠도 됩니다                                                                                            |
+| 7    | `src/main.ts`                | `scene` 목록에 내 장면 등록(Boot, Preload는 맨 앞에 유지)                                                                         |
+| 8    | `src/ui/Shell.ts`            | HTML 메뉴/HUD를 게임에 맞게 교체하거나 삭제(아래 참고). `src/ui/system.ts`는 유지                                                 |
+| 9    | `tests/e2e/`                 | `demo.spec.ts`를 내 게임 흐름으로 교체. `ui.ts`의 id·asset 경로·저장 키를 맞추고 contract·crazygames·embed 검사는 유지            |
 
-**Shell을 삭제할 때**: Phaser가 들어갈 `<div id="game">`과 크기를 가진 부모를 `index.html`에 직접 만들고,
+**Shell을 교체·삭제할 때**: Phaser가 들어갈 `<div id="game">`과 크기를 가진 부모를 직접 만들고,
 전체화면을 쓰면 `main.ts`의 `fullscreenTarget`(기본 `'stage'`)도 그 요소 id로 맞춥니다.
-`app.onState`는 상태가 바뀔 때 호출되는 콜백이므로 HUD가 없으면 비워 둬도 됩니다.
+`SystemUi`를 캔버스 컨테이너에 연결하고 `app.onState`에서 `system.render()`를 호출합니다. 게임 조작 버튼에는 `data-game-control`을 붙입니다.
+그러면 준비 전·광고 중·오류 상태의 조작 차단, 오류 안내와 새로고침, 일시정지·회전 안내가 그대로 동작합니다([구조와 계약](ARCHITECTURE.md#html-ui-계약)).
+CrazyGames처럼 iframe에서만 배포한다면 `gameConfig.layout`을 `'embed'`로 고정하고 Shell의 page 배치를 지워도 됩니다.
 
 ## 새 장면 만들기
 
@@ -166,6 +170,17 @@ HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
 - 세로 게임은 `width: 540, height: 960, orientation: 'portrait'`로 바꿉니다. 안내 문구와 전체화면 회전 안내도 이 값을 따릅니다.
 - 전체화면 버튼은 지원 브라우저에서만 보입니다. 전체화면 대상 `#stage`에는 조작 버튼도 포함됩니다. 나가지 않고 시작·일시정지·재개·메뉴·재시작할 수 있고, 권장 방향이 아니면 캔버스 위에 회전 안내가 뜹니다.
 
+### 화면 배치: page와 embed
+
+| 배치    | 언제                                       | 모습                                                                   |
+| ------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| `page`  | 단독 페이지로 열 때(`layout: 'auto'` 기본) | 소개·사이드바·서비스 시험이 있는 템플릿 데모 페이지                    |
+| `embed` | iframe 안(CrazyGames, itch.io)             | 게임 카드가 창 전체를 채움. 기록은 제목 줄, 저장 상태는 설정 창에 표시 |
+
+- `?layout=embed` / `?layout=page`로 바꿔 볼 수 있습니다. 배포 대상이 iframe뿐이면 `gameConfig.layout: 'embed'`로 고정합니다.
+- embed에서는 문서가 스크롤되지 않습니다. 알림은 게임 화면 위에 잠깐 표시되고, 저장 문제가 있으면 설정 버튼에 점이 표시됩니다.
+- 휴대폰 세로로 가로 게임을 열면 회전 안내가 게임 화면을 덮습니다(전체화면이 아니어도 표시).
+
 ### 렌더 배율
 
 고해상도(레티나·휴대폰) 화면에서 흐려지지 않도록, 게임은 `안전 영역 × k` 화소로 그리고 카메라를 k배 zoom합니다. 장면 좌표는 그대로 960×540 단위입니다.
@@ -176,26 +191,42 @@ HTML 배치(`Shell`, `style.css`)는 화면에 따라 이렇게 바뀝니다.
 - 저가 휴대폰에서 프레임이 떨어지면 `maxRenderScale.mobile`을 1.25나 1로 낮춥니다. 개발 서버에서 `?debug`를 붙이면 게임 화면 왼쪽 위에 `render ×k · fps`가 표시됩니다. 같은 Wi-Fi의 휴대폰에서 Network 주소에 `?debug`를 붙여 확인하세요.
 - k는 전체화면 크기를 기준으로 정하므로, 페이지 안의 작은 게임 화면에서는 실제 표시보다 크게 그리기도 합니다(예: PC 1920×1080에서 k=2, 표시 폭 약 1062px).
 
+## 문구와 언어
+
+사용자에게 보이는 문구는 `src/game/strings.ts`에 언어별로 모읍니다. 장면과 UI는 `this.app.text`에서 읽습니다.
+
+```ts
+// strings.ts의 ko·en 객체에 같은 키를 추가한 뒤
+this.add.text(x, y, this.app.text.game.menuTitle, style);
+```
+
+- `gameConfig.locale: 'auto'`는 브라우저 언어(`navigator.languages`)에서 지원 언어를 고르고, 없으면 `fallbackLocale`(기본 `en`)을 씁니다. 특정 언어로 고정하려면 `'ko'`처럼 지정합니다.
+- 새 언어는 `ko`와 같은 모양의 객체를 만들어 `locales`에 추가합니다. 타입 검사와 `tests/unit/presentation.test.ts`가 빠진 키를 찾습니다.
+- 문구를 HTML에 넣을 때는 `escape()`(`src/ui/system.ts`)를 사용합니다. 웹 글꼴로 다른 문자 체계를 표시하면 아래 asset 안내의 글꼴 로드 주의를 따릅니다.
+- 검사는 문구가 아니라 id·`data-state`로 요소와 상태를 확인하므로 언어를 바꿔도 유지됩니다.
+
 ## 디버그와 오류
 
 - 개발 서버 주소에 `?debug`를 붙이면 Arcade 물리 충돌 영역과 렌더 배율·FPS가 보입니다. 배포 빌드에서는 무시됩니다.
 - `?round=5`처럼 붙이면 예제 한 판을 5초로 줄입니다(E2E에서 사용). 실제 게임의 조정값이 보상·랭킹에 영향을 준다면 `import.meta.env.DEV`일 때만 읽도록 합니다.
-- 처리되지 않은 오류와 Promise 거부는 `app.fail(message)`로 첫 오류를 유지합니다. 게임·오디오·SDK gameplay·입력을 멈추고 이후 자동 저장을 차단합니다. 열린 설정창을 닫고 안내와 새로고침 버튼을 표시하며 콘솔 출력은 그대로 남습니다. HTML UI를 교체해도 오류 상태의 조작 차단과 복구 경로를 유지합니다.
+- 처리되지 않은 오류와 Promise 거부는 `app.fail(message)`로 첫 오류를 유지합니다. 광고·플랫폼 SDK·브라우저 확장처럼 다른 origin 스크립트의 오류는 콘솔 경고(`[External error ignored]`)만 남기고 게임을 멈추지 않습니다. 게임·오디오·SDK gameplay·입력을 멈추고 이후 자동 저장을 차단합니다. 열린 설정창을 닫고 안내와 새로고침 버튼을 표시하며 콘솔 출력은 그대로 남습니다. HTML UI를 교체해도 오류 상태의 조작 차단과 복구 경로를 유지합니다.
 
 ## 검증
 
-| 명령                             | 내용                                                           |
-| -------------------------------- | -------------------------------------------------------------- |
-| `npm run check`                  | 린트, 포맷, 단위 검사, 타입 검사, 배포 빌드                    |
-| `npm run test:e2e`               | 개발 서버에서 Chromium·Firefox·WebKit 및 Pixel 7 Chromium 조작 |
-| `E2E_PREVIEW=1 npm run test:e2e` | CrazyGames 전용 빌드를 생성한 뒤 배포 모드 검사 (`dist/` 보존) |
-| `npm run test:e2e:standalone`    | 자체 호스팅용 배포 빌드에서 SDK 미요청·로컬 저장·복원 검사     |
-| `npm run test:sdk`               | 공식 CDN SDK local의 초기화·음소거·광고·저장 복원 검사         |
+| 명령                             | 내용                                                              |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `npm run check`                  | 린트, 포맷, 단위 검사, 타입 검사, CrazyGames·standalone 빌드 확인 |
+| `npm run test:e2e`               | 개발 서버에서 Chromium·Firefox·WebKit 및 Pixel 7 Chromium 조작    |
+| `E2E_PREVIEW=1 npm run test:e2e` | CrazyGames 전용 빌드를 생성한 뒤 배포 모드 검사 (`dist/` 보존)    |
+| `npm run test:e2e:standalone`    | 자체 호스팅용 배포 빌드에서 SDK 미요청·로컬 저장·복원 검사        |
+| `npm run test:sdk`               | 공식 CDN SDK local의 초기화·음소거·광고·저장 복원 검사            |
 
 개발 검사는 4273, 배포 검사는 4274 포트를 씁니다. 기존 서버를 재사용하지 않으며 충돌하면 실패합니다. 배포 검사는 `test-results/builds/e2e/`에 CrazyGames 빌드를 직접 생성하므로 사전 빌드가 필요 없습니다. CI는 두 모드를 모두 실행하고 실패 시 trace/screenshot을 보관합니다.
 standalone 검사는 `test-results/builds/standalone/`에 별도 빌드하고 4175 포트를 사용합니다. 공식 SDK 검사는 `test-results/builds/sdk/`와 4176 포트를 사용합니다. 두 검사는 기존 서버를 재사용하지 않으며, 일반 배포 빌드와 분리합니다.
 검사 결과는 각각 `test-results/e2e/dev/`, `test-results/e2e/preview/`, `test-results/standalone/`, `test-results/sdk/`에 남깁니다. CPU/GPU 경합을 줄이기 위해 기본 worker는 1개입니다.
 CI는 standalone 검사도 실행합니다. 공식 CDN 검사는 `workflow_dispatch`의 `sdk_smoke`를 켜서 선택적으로 실행하며, 관찰 기록 위치는 [SDK 안내](CRAZYGAMES.md#검증-범위와-공식-문서)를 봅니다.
+E2E 파일은 `contract.spec.ts`(저장 보호·재시도, asset 실패, 오류 정지·외부 오류 무시, 전체화면 조작), `crazygames.spec.ts`(SDK 경계), `embed.spec.ts`(iframe 배치), `responsive.spec.ts`(page 배치), `demo.spec.ts`(예제 흐름·언어)로 나뉩니다. 요소는 `ui.ts`의 id로 찾습니다.
+`check`의 빌드 확인은 `test-results/builds/check/`에 만들며 `dist/`를 바꾸지 않습니다.
 공통 흐름은 Chromium·Firefox·WebKit에서 실행합니다. Chromium 전용 CDP touch는 `tests/e2e/touch.ts`로 분리하여 Pixel 7 프로젝트에서만 사용합니다. WebKit 검사는 실제 Safari/iPhone 검증이 아니며, 모바일 에뮬레이션도 실기기 검증이 아닙니다.
 
 실제 iPhone·Android에서는 다음을 별도로 확인하고 기기·OS·브라우저·결과를 기록합니다.
@@ -209,12 +240,14 @@ CI는 standalone 검사도 실행합니다. 공식 CDN 검사는 `workflow_dispa
 
 ```bash
 npm ci
-npm run check   # 배포 빌드까지 생성
+npm run check
 npm run build:standalone # 자체 호스팅용 최종 빌드 (CrazyGames 제출은 build:crazygames)
 npm run preview # 올리기 전에 dist 확인
 ```
 
-- `dist/` 내용 전체(음원 포함)를 정적 서버에 올립니다. `base: './'`이므로 `/my-game/` 같은 하위 경로, itch.io(zip 업로드)도 됩니다.
+`npm run build`는 대상이 정해지지 않으면(`--mode`나 `VITE_PLATFORM` 없음) 중단합니다. 자체 호스팅에 CrazyGames용 빌드를 올리면 광고 차단기 등으로 SDK가 막힐 때 저장할 수 없기 때문입니다.
+
+- `dist/` 내용 전체(음원 포함)를 정적 서버에 올립니다. `base: './'`이므로 `/my-game/` 같은 하위 경로, itch.io(zip 업로드)도 됩니다. itch.io처럼 iframe으로 보여 주는 곳은 자동으로 embed 배치가 됩니다.
 - CrazyGames 제출은 [SDK·제출 안내](CRAZYGAMES.md)를 따릅니다. Basic Launch가 기본이며 Full Launch 승인 후 광고를 켭니다.
 - `.env.local`의 `VITE_PLATFORM`으로 기본 대상을 선택할 수 있습니다. `standalone` / `crazygames` 이외 값과 전용 명령의 mode에 맞지 않는 값은 빌드를 중단합니다. [Vite 환경 변수·mode](https://vite.dev/guide/env-and-mode)를 따르며 preview 시점에 빌드 대상이 바뀌지는 않습니다.
 - 라우터가 없어 SPA rewrite 설정은 필요 없습니다. `index.html`을 파일로 직접 열지 말고 HTTP 서버로 엽니다.
@@ -223,12 +256,15 @@ npm run preview # 올리기 전에 dist 확인
 
 ## 문제 해결
 
-| 증상                           | 확인                                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------ |
-| 빈 화면/로딩 실패              | 개발자 도구 Network에서 asset 404, JS 오류 확인. HTTP 서버로 실행                          |
-| 소리 없음                      | 플레이 버튼을 눌렀는지, 브라우저/OS 음소거, 게임 볼륨 확인                                 |
-| "저장 보호 모드" 표시          | 손상·미래 버전 데이터. 필요하면 개발자 도구에서 백업한 뒤 설정에서 초기화                  |
-| 폰에서 접속 불가               | 같은 Wi-Fi인지, PC 방화벽, Network 주소 확인                                               |
-| 방향키로 이동 안 됨            | 게임 화면을 눌러 포커스. 설정 창/일시정지 상태 확인                                        |
-| 게임패드 인식 안 됨            | 연결 후 버튼을 한 번 눌러야 브라우저가 패드를 알려 줍니다                                  |
-| 배포에서 광고/결제 unavailable | CrazyGames Basic Launch·광고 차단/빈 광고·미지원 결제 확인. [SDK 안내](CRAZYGAMES.md) 참고 |
+| 증상                             | 확인                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| 빈 화면/로딩 실패                | 개발자 도구 Network에서 asset 404, JS 오류 확인. HTTP 서버로 실행                          |
+| 소리 없음                        | 플레이 버튼을 눌렀는지, 브라우저/OS 음소거, 게임 볼륨 확인                                 |
+| "저장 보호 모드" 표시            | 손상·미래 버전 데이터. 필요하면 개발자 도구에서 백업한 뒤 설정에서 초기화                  |
+| 폰에서 접속 불가                 | 같은 Wi-Fi인지, PC 방화벽, Network 주소 확인                                               |
+| 방향키로 이동 안 됨              | 게임 화면을 눌러 포커스. 설정 창/일시정지 상태 확인                                        |
+| 게임패드 인식 안 됨              | 연결 후 버튼을 한 번 눌러야 브라우저가 패드를 알려 줍니다                                  |
+| 배포에서 광고/결제 unavailable   | CrazyGames Basic Launch·광고 차단/빈 광고·미지원 결제 확인. [SDK 안내](CRAZYGAMES.md) 참고 |
+| `npm run dev`에서 저장 불가 표시 | 외부 네트워크가 막혀 SDK를 불러오지 못한 경우. `npm run dev:standalone`으로 실행           |
+| `npm run build`가 중단됨         | 배포 대상을 정합니다: `build:crazygames` / `build:standalone`                              |
+| 문구가 영어/한국어로 나옴        | 브라우저 언어를 따릅니다. `gameConfig.locale`로 고정할 수 있습니다                         |

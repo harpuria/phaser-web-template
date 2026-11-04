@@ -101,14 +101,14 @@ test('official SDK initializes, preserves mute, completes local ads, and restore
     const muteGain = () =>
       page.evaluate(() => window.sdkSmoke!.gains[0]?.gain.value);
     expect(await muteGain()).toBe(0);
-    await page.getByRole('button', { name: '설정 열기' }).click();
-    await page.getByLabel('전체 음소거', { exact: true }).check();
-    await page.getByLabel('전체 음소거', { exact: true }).uncheck();
+    await page.locator('#settings').click();
+    await page.locator('#muted').check();
+    await page.locator('#muted').uncheck();
     expect(
       await page.evaluate(() => window.CrazyGames!.SDK.game.settings.muteAudio),
     ).toBe(true);
     expect(await muteGain()).toBe(0);
-    await page.getByRole('button', { name: '완료', exact: true }).click();
+    await page.locator('#settings-done').click();
     expect(await muteGain()).toBe(0);
     checked('SDK mute retains priority after user settings and dialog close');
 
@@ -132,25 +132,19 @@ test('official SDK initializes, preserves mute, completes local ads, and restore
           },
         });
     });
-    await page.getByRole('button', { name: '보상형 광고 테스트' }).click();
-    await expect(
-      page.getByRole('button', { name: '플레이 시작' }),
-    ).toBeDisabled();
-    await expect(page.getByRole('status')).toContainText('completed (Mock', {
+    await page.locator('#reward').click();
+    await expect(page.locator('#play')).toBeDisabled();
+    await expect(page.locator('#notice')).toContainText('completed (Mock', {
       timeout: 30_000,
     });
-    await expect(
-      page.getByRole('button', { name: '플레이 시작' }),
-    ).toBeEnabled();
+    await expect(page.locator('#play')).toBeEnabled();
     checked('rewarded local ad completes as mock and releases controls');
 
-    await page.getByRole('button', { name: '플레이 시작' }).click();
+    await page.locator('#play').click();
     await expect(page.locator('#mode-label')).toHaveText('RESULT', {
       timeout: 30_000,
     });
-    await expect(
-      page.getByRole('button', { name: '다시 플레이' }),
-    ).toBeEnabled();
+    await expect(page.locator('#play')).toBeEnabled();
     const probe = await page.evaluate(() => ({
       ads: window.sdkSmoke!.ads,
     }));

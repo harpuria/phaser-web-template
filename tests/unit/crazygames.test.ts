@@ -110,7 +110,7 @@ describe('CrazyGames initialization and storage', () => {
     expect(context.storage).toBeUndefined();
     expect(context.storageKind).toBe('unavailable');
     expect(context.platform.isMock).toBe(false);
-    expect(context.warning).toContain('새로고침');
+    expect(context.warning).toBe('platform-unavailable');
     expect(new Store(context.storage, 'save', progressSchema).status).toBe(
       'unavailable',
     );

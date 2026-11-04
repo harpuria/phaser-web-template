@@ -698,3 +698,99 @@ dialog .primary {
   animation: none !important;
   scroll-behavior: auto !important;
 }
+/* embed: iframe(CrazyGames, itch.io) 안에서 게임 카드가 창 전체를 채운다. 페이지 스크롤이 없다. */
+html[data-layout='embed'],
+html[data-layout='embed'] body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+#app[data-layout='embed'] {
+  max-width: none;
+  height: 100%;
+  padding: 0;
+}
+#app[data-layout='embed'] .stage-card {
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0
+    env(safe-area-inset-left);
+}
+#app[data-layout='embed'] .stage-heading {
+  height: 40px;
+  flex-shrink: 0;
+  gap: 12px;
+}
+#app[data-layout='embed'] .stage-heading small {
+  display: none;
+}
+#app[data-layout='embed'] .stage-heading > span:first-child {
+  margin-right: auto;
+}
+#app[data-layout='embed'] #compact-stats {
+  color: #cbd5e1;
+}
+#app[data-layout='embed'] .canvas-wrap {
+  min-height: 0;
+  min-width: 0;
+}
+#app[data-layout='embed'] #game {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+#app[data-layout='embed'] .game-toolbar {
+  flex-shrink: 0;
+  min-height: 0;
+  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+}
+#app[data-layout='embed'] .game-toolbar p {
+  margin: 0;
+}
+#app[data-layout='embed'] .game-toolbar button {
+  padding: 10px 14px;
+}
+/* 저장 문제가 있으면 설정 버튼에 표시한다(상세 내용은 설정 창). */
+#settings[data-alert='true']::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 100%;
+  background: #fb7185;
+  vertical-align: middle;
+}
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 2;
+  max-width: calc(100% - 28px);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #0b1019e6;
+  border: 1px solid #303c4f;
+  font: 12px monospace;
+  color: #cbd5e1;
+  text-align: center;
+  pointer-events: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  #app[data-layout='embed'] #stage[data-orientation='landscape'] #rotate-hint {
+    display: flex;
+  }
+}
+@media (orientation: landscape) and (pointer: coarse) {
+  #app[data-layout='embed'] #stage[data-orientation='portrait'] #rotate-hint {
+    display: flex;
+  }
+}
+@media (max-width: 480px) {
+  #app[data-layout='embed'] .game-toolbar p {
+    display: none;
+  }
+}

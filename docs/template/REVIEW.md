@@ -3,7 +3,22 @@
 ## 전체 점검 — 2026-11-04
 
 검토 기준: `9109767`의 소스·문서·테스트와 배포 빌드 실행. 범위는 의존성 최신화, AI 에이전트의 착수 용이성, 단독·CrazyGames 배포, 그 외 개선점입니다.
-이번 점검에서는 코드를 바꾸지 않았습니다. 아래 항목을 반영할 때 [변경 기록](CHANGELOG.md)과 [검증 기록](VALIDATION.md)을 갱신합니다.
+같은 날 1~12번을 모두 반영해 0.4.0으로 배포했습니다. 아래 본문은 반영 전 근거이고, 반영 내용은 이 표와 [변경 기록](CHANGELOG.md), 검사 결과는 [검증 기록](VALIDATION.md)에 있습니다.
+
+| 항목                | 반영                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1. embed 배치       | `gameConfig.layout`(auto: iframe이면 embed), `?layout=`, `embed.spec.ts`의 iframe 4개 크기 검사       |
+| 2. 외부 오류        | `isForeignError`/`isForeignRejection`, 단위 검사와 `contract.spec.ts`의 외부 스크립트 오류 검사       |
+| 3. 언어             | `src/game/strings.ts`(ko/en), `gameConfig.locale`, `core/locale.ts`, `PlatformContext.warning` 코드화 |
+| 4. 기본 대상        | `npm run build`는 대상이 없으면 중단, `check`는 두 대상 빌드, AGENTS.md에 `dev:standalone` 안내       |
+| 5. 방향 잠금        | `releaseOrientationOnExit`, iframe 전체화면 허용 여부 확인. 실기기 재확인은 남음                      |
+| 6. 버전             | 0.4.0, `package.json` 단일 원본, footer `Phaser.VERSION`. git tag는 병합 후 생성                      |
+| 7. 의존성           | patch/minor 갱신, `@types/node` 24, TS 7 보류 기록, Dependabot, Node 22.12 CI                         |
+| 8. 끝난 계획 문서   | `docs/IMPLEMENTATION_PLAN.md` 삭제                                                                    |
+| 9. 게임 문서        | `docs/game/README.md` 양식, AGENTS.md에서 연결                                                        |
+| 10. Shell 계약 분리 | `src/ui/system.ts`(`data-game-control`, `data-recovery`)                                              |
+| 11. E2E 문구 의존   | `tests/e2e/ui.ts`(id), `data-state`·`data-kind`·`aria-pressed`, contract/demo 분리                    |
+| 12. AGENTS.md       | 시작 명령, 네트워크 제한 환경, 실행한 Playwright project 보고                                         |
 
 ### 요약
 
