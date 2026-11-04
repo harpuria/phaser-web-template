@@ -1,5 +1,23 @@
 # 검증 기록
 
+## 0.4.0 · 점검 반영 — 2026-11-04 · Linux x64 · Node 22.23.4
+
+| 검사                                          | 결과                                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `npm run check`                               | ESLint, Prettier, 단위 74개, TypeScript, CrazyGames·standalone 빌드 확인 통과                            |
+| `npm run test:e2e` (Chromium desktop·Pixel 7) | 48개 통과, 14개 의도적 skip                                                                              |
+| `E2E_PREVIEW=1 npm run test:e2e` (같은 구성)  | 48개 통과, 14개 의도적 skip                                                                              |
+| `npm run test:e2e:standalone`                 | desktop·Pixel 7: 2개 통과                                                                                |
+| 대상 없는 `npm run build`                     | `Choose a deployment target` 오류로 중단 확인                                                            |
+| iframe 배치 수동 확인 (Chromium, screenshot)  | 1040×585·1280×720·844×390·390×844 모두 문서 스크롤 없음, 캔버스가 iframe을 채움                          |
+| 수정 전 외부 스크립트 오류 재현               | 플레이 중 다른 origin 스크립트의 `throw`가 `Script error.` 치명 정지를 일으킴. 수정 후 E2E에서 게임 유지 |
+
+- 브라우저: 이 환경은 Playwright 1.64.1 브라우저를 내려받을 수 없어, 저장소에 커밋하지 않은 로컬 설정으로 미리 설치된 Chromium(Playwright 1.63 build 1243)을 `executablePath`로 지정해 desktop·mobile project만 실행했습니다. **Firefox·WebKit project는 실행하지 않았습니다.** CI는 1.64.1 브라우저를 설치해 세 엔진을 실행합니다.
+- 14개 skip: 모바일 project에서 화면 크기를 직접 정하는 반응형 7개·embed 4개·언어 2개, 키보드 Escape 1개.
+- embed 검사는 실제 loopback HTTP 서버(localhost)가 다른 origin(127.0.0.1)의 게임을 iframe으로 여는 방식입니다. about:blank 호스트는 iframe 저장소가 막히고, route로 만든 페이지는 Chrome의 Local Network Access 검사로 iframe이 차단되어 사용하지 않았습니다.
+- lockfile은 npm 11.21.1로 갱신했습니다(npm 10은 `libc` 필드를 지움). Node 22.12 CI job은 원격에서 아직 실행하지 않았습니다.
+- 미검증: Firefox·WebKit E2E, `npm run test:sdk`(이 환경에서 `sdk.crazygames.com` 접근 거절), CrazyGames 최신 요구사항 원문(`docs.crazygames.com` 접근 거절), 실제 CrazyGames Preview의 embed 배치·전체화면 버튼, 실기기에서 전체화면 종료 후 방향 복귀, 원격 GitHub Actions.
+
 ## 저장 재시도·전체화면 조작·설정 즉시 적용·브라우저 확대 — 2026-10-28~29 · macOS arm64 · Node 24.16.0
 
 | 검사                             | 결과                                                                                                    |
