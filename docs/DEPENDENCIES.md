@@ -30,7 +30,7 @@ CI는 `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` 모두
 
 - npm `latest` 기준으로 Vite 8.3.5, Vitest 5.1.0, ESLint 10.14.0, typescript-eslint 8.72.1, Prettier 3.9.10, Playwright 1.64.1로 올렸습니다. Phaser 4.2.1은 그대로 최신 안정판입니다(GitHub Releases Latest, 4.3.0은 master에서 미배포).
 - Vitest 5.1.0(2026-11-02)과 ESLint 10.14.0(2026-10-30)은 배포 1주 이내 버전입니다. 문제가 생기면 5.0.5 / 10.13.0으로 되돌립니다.
-- `@types/node`는 26에서 **24.x**로 내렸습니다. 타입이 실행 Node(`.nvmrc` 24, 최소 22.12)보다 새 API를 허용하지 않게 하기 위해서입니다.
+- `@types/node`는 26에서 **24.x**로 내렸습니다. 타입이 실행 Node(`.nvmrc` 24, 최소 22.12)보다 새 API를 허용하지 않게 하기 위해서입니다. Dependabot은 `@types/node` 25 이상을 제안하지 않습니다(`.github/dependabot.yml`의 `versions: ['>=25']`). `.nvmrc`의 major를 올릴 때 이 범위도 함께 올립니다.
 - **TypeScript 7.0.2는 보류**합니다. typescript-eslint 8.72.1의 peer 범위가 `typescript >=4.8.4 <6.1.0`이라 6.0.3을 유지합니다. typescript-eslint가 7을 지원하면 함께 올립니다. Dependabot도 TypeScript major는 제외합니다.
 - `npm audit --omit=dev`는 0건입니다. 전체 `npm audit`은 ESLint·typescript-eslint가 쓰는 `minimatch@10.2.6`의 moderate 1건(GHSA-g3hv-75wg-m249)을 보고합니다. 개발 도구에만 해당하며 상위 패키지가 `minimatch@11`을 허용하면 해소됩니다. `npm audit fix --force`는 ESLint를 깨뜨리므로 쓰지 않습니다.
 - lockfile은 npm 11(Node 24)로 갱신합니다. npm 10은 optional 패키지의 `libc` 필드를 지워 불필요한 diff를 만듭니다.

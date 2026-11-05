@@ -18,6 +18,10 @@ updates:
       # typescript-eslint가 TypeScript 7을 지원할 때까지 6.x를 유지한다(docs/DEPENDENCIES.md).
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+      # 타입이 실행 Node(.nvmrc 24, 최소 22.12)보다 새 API를 허용하지 않게 major를 .nvmrc에 맞춘다.
+      # .nvmrc를 올릴 때 이 범위도 함께 올린다(docs/DEPENDENCIES.md).
+      - dependency-name: '@types/node'
+        versions: ['>=25']
   - package-ecosystem: github-actions
     directory: /
     schedule:
