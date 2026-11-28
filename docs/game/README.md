@@ -1,8 +1,8 @@
 # 게임 문서
 
-이 파일은 파생 게임의 기획·결정 기록을 두는 자리입니다. 템플릿 자체의 이력은 `docs/template/`에 있습니다.
-AI와 사람이 게임 기능을 만들기 전에 먼저 읽는 문서이므로, 아래 항목을 게임에 맞게 채우고 바뀔 때마다 갱신합니다.
-기획 문서가 여러 개라면(GDD, 시스템 표, MVP 범위) 이 폴더에 두고 아래 목록에서 연결합니다.
+파생 게임의 기획과 결정 기록을 남기는 자리다(템플릿 자체 이력은 `docs/template/`).
+게임 기능 작업 전에 사람과 AI가 먼저 읽는 문서이므로, 아래 항목을 채우고 바뀔 때마다 갱신한다.
+GDD·시스템 표·MVP 범위 등 별도 문서가 있다면 이 폴더에 두고 하단 목록에 연결한다.
 
 ## 출처
 
@@ -16,16 +16,16 @@ AI와 사람이 게임 기능을 만들기 전에 먼저 읽는 문서이므로,
 ## 게임 개요
 
 - 한 줄 소개:
-- 장르와 참고 감각:
-- 대상 플랫폼: CrazyGames / 자체 호스팅 / 기타 (`npm run build:crazygames`, `build:standalone`)
+- 장르와 플레이 감각(참고 작품):
+- 배포 대상: CrazyGames / 자체 호스팅 / 기타 (`npm run build:crazygames`, `npm run build:standalone`)
 - 화면 방향과 안전 영역: (예: 가로 960×540, `gameConfig.orientation`)
 - 지원 언어: (예: en, ko — `src/game/strings.ts`, `gameConfig.locale`)
 
 ## 조작과 한 판의 구조
 
-- 입력: 키보드 / 마우스 / 터치 / 게임패드 중 무엇을, 어떻게
-- 한 판의 시작·종료 조건, 결과 화면에서 할 수 있는 것
-- 일시정지가 필요한 화면(`gameConfig.pausableScenes`)
+- 입력 방식: 사용할 입력(키보드·마우스·터치·게임패드)과 조작 방법
+- 한 판의 흐름: 시작·종료 조건과 결과 화면 동작(재시작, 메뉴 이동 등)
+- 일시정지가 필요한 화면(`gameConfig.pausableScenes`):
 
 ## 저장 데이터
 
@@ -33,12 +33,12 @@ AI와 사람이 게임 기능을 만들기 전에 먼저 읽는 문서이므로,
 | ---- | ---- | ---- | --------- |
 |      |      |      |           |
 
-schema 변경은 `src/game/save.ts`의 version을 올리고 이전 버전 fixture 검사를 추가합니다.
+저장 schema를 변경할 때는 `src/game/save.ts`의 `version`을 올리고 이전 버전 fixture 테스트를 추가한다.
 
 ## 광고·보상
 
-- midgame 광고를 부르는 자연스러운 중단점:
-- 보상형 광고의 보상과 버튼 위치(보상 내용을 버튼에 명시):
+- midgame 광고 중단점:
+- 보상형 광고 보상과 버튼 위치(보상 내용을 버튼에 명시):
 - CrazyGames Launch 단계: Basic / Full (`services.crazyGames.launch`)
 
 ## MVP 범위와 이후
