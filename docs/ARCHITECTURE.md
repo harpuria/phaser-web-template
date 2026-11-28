@@ -1,6 +1,6 @@
 # 구조와 계약
 
-`core/`, `services/`, `app.ts`를 수정하기 전에 읽는 설계 문서입니다. 일반적인 사용법은 [개발 안내](DEVELOPMENT.md)를 참고합니다.
+`core/`, `services/`, `app.ts`를 수정하기 전에 읽는 설계 문서다. 일반적인 사용법은 [개발 안내](DEVELOPMENT.md)를 참고한다.
 
 ## 파일 안내
 
@@ -28,9 +28,9 @@ tests/unit/               공통 경계 단위 테스트
 tests/e2e/                contract(공통 계약)·crazygames(SDK 경계)·embed(iframe 배치)·demo(예제 흐름)·responsive, 요소 ID는 ui.ts
 ```
 
-- **의존 방향**: `game/`, `ui/` → `core/`, `services/`. `core/`와 `services/`는 `game/`이나 데모 asset 키에 의존하지 않습니다.
-- **조립 경계**: `App`은 `game/`의 schema와 `Session`을 조립만 하며, 점수·보상 규칙은 `game/`에 둡니다. 게임 코드는 외부 SDK를 직접 호출하지 않고 `app.platform`을 거칩니다.
-- **자동 검증**: ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import·re-export·동적 import·타입 import를 차단합니다. 필요한 데이터와 콜백은 `app.ts`에서 주입합니다.
+- **의존 방향**: `game/`, `ui/` → `core/`, `services/`. `core/`와 `services/`는 `game/`이나 데모 asset 키에 의존하지 않는다.
+- **조립 경계**: `App`은 `game/`의 schema와 `Session`을 조립만 하며, 점수·보상 규칙은 `game/`에 둔다. 게임 코드는 외부 SDK를 직접 호출하지 않고 `app.platform`을 거친다.
+- **자동 검증**: ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import·re-export·동적 import·타입 import를 차단한다. 필요한 데이터와 콜백은 `app.ts`에서 주입한다.
 
 ## 용어
 
@@ -45,32 +45,32 @@ tests/e2e/                contract(공통 계약)·crazygames(SDK 경계)·embed
 
 ## 시작과 정리
 
-1. `main.ts`가 `createPlatform()`으로 SDK 초기화와 저장소 선택이 끝날 때까지 기다린 뒤 `App`과 `Shell`을 생성하고 오류 감시를 시작합니다.
-2. `BootScene`이 `app.attach(game)`으로 오디오, 탭 숨김/`pagehide` 처리, 자동 저장 타이머를 연결합니다.
-3. `PreloadScene`이 `loadingStart`를 알리고 게임의 `queueAssets`로 asset을 불러오며 진행률을 표시합니다.
-   필수 asset을 불러오지 못하면 오류 안내와 새로고침 버튼을 표시합니다. 모두 성공하면 `loadingStop`, `app.ready = true` 후 `startScene`으로 전환합니다.
-4. 장면 전환은 `transition()`이 registry lock으로 중복 요청을 막고, 장면 `shutdown` 시 lock을 해제합니다.
-5. HMR 시에는 오류 감시, HTML listener, 타이머, SDK listener·진행 중 요청, 오디오, Phaser 게임을 모두 정리합니다. SDK 초기화 도중 dispose되면 게임을 생성하지 않습니다.
+1. `main.ts`가 `createPlatform()`으로 SDK 초기화와 저장소 선택이 끝날 때까지 기다린 뒤 `App`과 `Shell`을 생성하고 오류 감시를 시작한다.
+2. `BootScene`이 `app.attach(game)`으로 오디오, 탭 숨김/`pagehide` 처리, 자동 저장 타이머를 연결한다.
+3. `PreloadScene`이 `loadingStart`를 알리고 게임의 `queueAssets`로 asset을 불러오며 진행률을 표시한다.
+   필수 asset을 불러오지 못하면 오류 안내와 새로고침 버튼을 표시한다. 모두 성공하면 `loadingStop`, `app.ready = true` 후 `startScene`으로 전환한다.
+4. 장면 전환은 `transition()`이 registry lock으로 중복 요청을 막고, 장면 `shutdown` 시 lock을 해제한다.
+5. HMR 시에는 오류 감시, HTML listener, 타이머, SDK listener·진행 중 요청, 오디오, Phaser 게임을 모두 정리한다. SDK 초기화 도중 dispose되면 게임을 생성하지 않는다.
 
-`App`은 장면이 바뀌어도 유지되며, 물리·게임 객체·입력 키는 Phaser 장면 수명을 따릅니다.
+`App`은 장면이 바뀌어도 유지되며, 물리·게임 객체·입력 키는 Phaser 장면 수명을 따른다.
 
 ### 예기치 않은 오류 처리
 
-- **외부 오류 제외**: 광고·플랫폼 SDK·브라우저 확장처럼 다른 origin에서 발생한 오류는 콘솔 경고만 남기고 게임을 멈추지 않습니다. 판별 기준은 `ErrorEvent.filename`의 origin, 세부 정보가 가려진 `Script error.`, Promise 거부 stack의 모든 위치가 다른 origin인 경우입니다. 출처를 알 수 없는 오류는 게임 오류로 간주합니다. 게임 JS를 별도 CDN origin에서 제공한다면 `watchUncaughtErrors`의 `origin` 옵션을 해당 값으로 지정합니다.
-- **게임 오류 정지**: 게임 코드의 예외와 Promise 거부는 `app.fail(message)`로 전달되어 첫 오류를 유지합니다. `fatal` 이유로 플레이·오디오·SDK gameplay·입력을 멈추며, 이후 `App.flush()`는 저장소에 기록하지 않습니다(HMR 정리·`pagehide`·자동 저장에도 동일하게 적용). 복구는 새로고침으로만 수행합니다.
+- **외부 오류 제외**: 광고·플랫폼 SDK·브라우저 확장처럼 다른 origin에서 발생한 오류는 콘솔 경고만 남기고 게임을 멈추지 않는다. 판별 기준은 `ErrorEvent.filename`의 origin, 세부 정보가 가려진 `Script error.`, Promise 거부 stack의 모든 위치가 다른 origin인 경우다. 출처를 알 수 없는 오류는 게임 오류로 간주한다. 게임 JS를 별도 CDN origin에서 제공한다면 `watchUncaughtErrors`의 `origin` 옵션을 해당 값으로 지정한다.
+- **게임 오류 정지**: 게임 코드의 예외와 Promise 거부는 `app.fail(message)`로 전달되어 첫 오류를 유지한다. `fatal` 이유로 플레이·오디오·SDK gameplay·입력을 멈추며, 이후 `App.flush()`는 저장소에 기록하지 않는다(HMR 정리·`pagehide`·자동 저장에도 동일하게 적용). 복구는 새로고침으로만 수행한다.
 
 ## 일시정지
 
-- `PauseState`는 일시정지 이유를 집합으로 관리하며, 모든 이유가 해제될 때만 재개합니다. 따라서 탭 복귀가 수동 일시정지를 풀지 않습니다.
-- 일시정지 동안 `gameConfig.pausableScenes`에 등록된 장면과 오디오를 멈춥니다. 메뉴 연출처럼 멈출 필요가 없는 장면은 목록에서 제외합니다.
-- 광고 `service` 이유만 있을 때는 장면만 멈추고 실제 `adStarted` 콜백부터 음소거합니다. 플랫폼 음소거는 사용자 음소거 설정과 별도로 보관합니다.
-- `PauseState`의 두 번째 콜백은 이유가 바뀔 때마다 실행되어, 탭이 숨겨진 상태에서 수동 일시정지를 추가해도 gameplay 이벤트가 정확히 반영됩니다.
-- 수동 토글(버튼·Escape)은 `has('manual')`을 기준으로 동작하므로 다른 이유로 멈춰 있는 동안에도 의도대로 전환됩니다.
-- `fatal` 이유는 오류 복구 전까지 유지됩니다. 광고 완료·탭 복귀·설정창 닫기가 이 이유를 해제하지 않으며, Shell은 열린 설정창을 닫고 새로고침·전체화면 나가기 외의 모든 조작을 비활성화합니다.
+- `PauseState`는 일시정지 이유를 집합으로 관리하며, 모든 이유가 해제될 때만 재개한다. 따라서 탭 복귀가 수동 일시정지를 풀지 않는다.
+- 일시정지 동안 `gameConfig.pausableScenes`에 등록된 장면과 오디오를 멈춘다. 메뉴 연출처럼 멈출 필요가 없는 장면은 목록에서 제외한다.
+- 광고 `service` 이유만 있을 때는 장면만 멈추고 실제 `adStarted` 콜백부터 음소거한다. 플랫폼 음소거는 사용자 음소거 설정과 별도로 보관한다.
+- `PauseState`의 두 번째 콜백은 이유가 바뀔 때마다 실행되어, 탭이 숨겨진 상태에서 수동 일시정지를 추가해도 gameplay 이벤트가 정확히 반영된다.
+- 수동 토글(버튼·Escape)은 `has('manual')`을 기준으로 동작하므로 다른 이유로 멈춰 있는 동안에도 의도대로 전환된다.
+- `fatal` 이유는 오류 복구 전까지 유지된다. 광고 완료·탭 복귀·설정창 닫기가 이 이유를 해제하지 않으며, Shell은 열린 설정창을 닫고 새로고침·전체화면 나가기 외의 모든 조작을 비활성화한다.
 
 ## 저장
 
-`Store<T>`는 envelope 하나를 저장소 키 하나에 기록합니다. 게임이 `defaults`·`validate`·`migrations`를 제공하며, 순차 migration과 최종 `validate`가 모두 통과해야 정상 로드로 인정합니다. 값을 갱신하면 `dirty` 상태가 되고, 판 종료·주기적 저장·탭 숨김·`pagehide` 시점에 `flush()`합니다. 브라우저 종료 시 이벤트 실행은 보장되지 않으므로 중요한 진행은 즉시 `flush()`합니다.
+`Store<T>`는 envelope 하나를 저장소 키 하나에 기록한다. 게임이 `defaults`·`validate`·`migrations`를 제공하며, 순차 migration과 최종 `validate`가 모두 통과해야 정상 로드로 인정한다. 값을 갱신하면 `dirty` 상태가 되고, 판 종료·주기적 저장·탭 숨김·`pagehide` 시점에 `flush()`한다. 브라우저 종료 시 이벤트 실행은 보장되지 않으므로 중요한 진행은 즉시 `flush()`한다.
 
 | 상태             | 의미와 동작                                             |
 | ---------------- | ------------------------------------------------------- |
@@ -79,43 +79,43 @@ tests/e2e/                contract(공통 계약)·crazygames(SDK 경계)·embed
 | `future-version` | 앱보다 높은 버전. 원본 보호를 위해 쓰기 차단            |
 | `unavailable`    | 접근 거부·용량 부족. 메모리로 플레이하며 저장 실패 표시 |
 
-- 실패 상태에서도 `update()`는 메모리 값을 변경하지만 `false`를 반환합니다.
-- 정상 읽기(빈 저장 포함) 후 쓰기만 실패한 경우에는 `canRetry`가 `true`입니다. 다음 `flush()`에서 최신 메모리 값을 재시도하며 성공하면 `ready`로 복구됩니다(자동 저장과 Shell의 "저장 다시 시도" 버튼이 같은 경로를 사용). 초기 읽기 실패·손상·미래 버전·저장소 미제공 상태에서는 재시도를 허용하지 않습니다.
-- 원본을 삭제하는 경로는 사용자가 확인한 `reset()`뿐입니다. 게임 진행 저장과 설정은 서로 다른 키를 사용하므로 서로 영향을 주지 않습니다.
-- 저장소 구현체는 생성 시 주입합니다. CrazyGames `local`/실환경은 SDK Data, SDK `disabled`/명시적 비활성화는 `localStorage`, SDK 초기화 실패 시에는 쓰기 불가 저장소를 사용합니다. Data 실패 후 `localStorage`로 전환하지 않습니다.
-- `localStorage`는 origin(도메인·포트)과 브라우저별로 분리됩니다. 새 게임은 `storagePrefix`를 바꿔 같은 도메인의 다른 게임과 충돌하지 않게 합니다.
-- 여러 탭에서 동시에 열면 마지막에 저장한 내용이 덮어씁니다. 암호화·부정행위 방지·서버 동기화가 없으므로 실제 화폐나 권한의 원본으로 사용하지 않습니다.
+- 실패 상태에서도 `update()`는 메모리 값을 변경하지만 `false`를 반환한다.
+- 정상 읽기(빈 저장 포함) 후 쓰기만 실패한 경우에는 `canRetry`가 `true`이다. 다음 `flush()`에서 최신 메모리 값을 재시도하며 성공하면 `ready`로 복구된다(자동 저장과 Shell의 "저장 다시 시도" 버튼이 같은 경로를 사용). 초기 읽기 실패·손상·미래 버전·저장소 미제공 상태에서는 재시도를 허용하지 않는다.
+- 원본을 삭제하는 경로는 사용자가 확인한 `reset()`뿐이다. 게임 진행 저장과 설정은 서로 다른 키를 사용하므로 서로 영향을 주지 않는다.
+- 저장소 구현체는 생성 시 주입한다. CrazyGames `local`/실환경은 SDK Data, SDK `disabled`/명시적 비활성화는 `localStorage`, SDK 초기화 실패 시에는 쓰기 불가 저장소를 사용한다. Data 실패 후 `localStorage`로 전환하지 않는다.
+- `localStorage`는 origin(도메인·포트)과 브라우저별로 분리된다. 새 게임은 `storagePrefix`를 바꿔 같은 도메인의 다른 게임과 충돌하지 않게 한다.
+- 여러 탭에서 동시에 열면 마지막에 저장한 내용이 덮어쓴다. 암호화·부정행위 방지·서버 동기화가 없으므로 실제 화폐나 권한의 원본으로 사용하지 않는다.
 
 ## 오디오, 입력, 화면
 
-- **오디오**: `AudioService`는 `master`/`mute`를 sound manager에, `music`/`sfx` 음량을 각 sound에 적용합니다. asset 키는 호출하는 쪽에서 넘깁니다. BGM은 사용자 상호작용 이후 시작하고 일시정지 동안 멈추며, 설정 변경을 즉시 반영합니다.
-- **입력**: Phaser world 좌표를 사용하며 캔버스(`#game`)에만 `touch-action: none`을 적용합니다. 키보드 이벤트도 `#game`에서만 받습니다.
-- **뷰포트와 렌더 배율**: `Scale.EXPAND`와 안전 영역(`gameConfig.width`×`height`)을 사용합니다. `core/viewport.ts`의 `centerSafeArea`가 카메라를 렌더 배율 `k`(`App.renderScale`, 시작 시 한 번 결정)로 zoom하고 화면 크기가 바뀔 때마다 안전 영역을 중앙에 맞춥니다. 게임 픽셀 크기는 `안전 영역 × k`이며 텍스처는 `k`배로 준비해 `1/k`로 줄여 사용합니다.
-- **전체화면과 방향 고정**: 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함한 `#stage`입니다. `bindFullscreenOrientation`이 전체화면 진입 후 방향 고정을 요청하고, 버튼·Esc·시스템 뒤로 가기로 종료할 때 고정을 해제합니다. 전체화면 버튼은 iframe이 전체화면을 허용할 때(`document.fullscreenEnabled`)만 표시합니다.
-- **레이아웃과 언어**: 배치는 `resolveLayout`이 시작 시 한 번 결정합니다(`gameConfig.layout: 'auto'`면 iframe은 `embed`, 단독 페이지는 `page`, `?layout=` 쿼리 우선). 문구는 `App.text`(`src/game/strings.ts`)에서 읽으며, `core/`·`services/`는 문구를 직접 갖지 않고 상태 코드(예: `PlatformContext.warning = 'platform-unavailable'`)만 반환합니다.
-- **설정 반영**: 설정을 갱신하거나 초기화한 뒤 `app.applySettings()`를 호출하면 오디오, `app.listenSettings()` 구독자, Shell에 즉시 반영됩니다. 구독 함수는 현재 설정을 즉시 전달하며 반환된 해제 함수를 장면 `shutdown` 때 호출합니다. 메뉴 반복 tween과 CSS 전환은 저장된 `reducedMotion` 값을 따르며, OS 설정은 최초 기본값으로 사용합니다.
+- **오디오**: `AudioService`는 `master`/`mute`를 sound manager에, `music`/`sfx` 음량을 각 sound에 적용한다. asset 키는 호출하는 쪽에서 넘긴다. BGM은 사용자 상호작용 이후 시작하고 일시정지 동안 멈추며, 설정 변경을 즉시 반영한다.
+- **입력**: Phaser world 좌표를 사용하며 캔버스(`#game`)에만 `touch-action: none`을 적용한다. 키보드 이벤트도 `#game`에서만 받는다.
+- **뷰포트와 렌더 배율**: `Scale.EXPAND`와 안전 영역(`gameConfig.width`×`height`)을 사용한다. `core/viewport.ts`의 `centerSafeArea`가 카메라를 렌더 배율 `k`(`App.renderScale`, 시작 시 한 번 결정)로 zoom하고 화면 크기가 바뀔 때마다 안전 영역을 중앙에 맞춘다. 게임 픽셀 크기는 `안전 영역 × k`이며 텍스처는 `k`배로 준비해 `1/k`로 줄여 사용한다.
+- **전체화면과 방향 고정**: 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함한 `#stage`다. `bindFullscreenOrientation`이 전체화면 진입 후 방향 고정을 요청하고, 버튼·Esc·시스템 뒤로 가기로 종료할 때 고정을 해제한다. 전체화면 버튼은 iframe이 전체화면을 허용할 때(`document.fullscreenEnabled`)만 표시된다.
+- **레이아웃과 언어**: 배치는 `resolveLayout`이 시작 시 한 번 결정한다(`gameConfig.layout: 'auto'`면 iframe은 `embed`, 단독 페이지는 `page`, `?layout=` 쿼리 우선). 문구는 `App.text`(`src/game/strings.ts`)에서 읽으며, `core/`·`services/`는 문구를 직접 갖지 않고 상태 코드(예: `PlatformContext.warning = 'platform-unavailable'`)만 반환한다.
+- **설정 반영**: 설정을 갱신하거나 초기화한 뒤 `app.applySettings()`를 호출하면 오디오, `app.listenSettings()` 구독자, Shell에 즉시 반영된다. 구독 함수는 현재 설정을 즉시 전달하며 반환된 해제 함수를 장면 `shutdown` 때 호출한다. 메뉴 반복 tween과 CSS 전환은 저장된 `reducedMotion` 값을 따르며, OS 설정은 최초 기본값으로 사용한다.
 
 ## HTML UI 계약
 
-`SystemUi`(`src/ui/system.ts`)는 데모 Shell과 분리된 공통 계약입니다. HTML UI를 교체하더라도 `SystemUi`를 생성하고 `render()`를 호출해야 합니다.
+`SystemUi`(`src/ui/system.ts`)는 데모 Shell과 분리된 공통 계약이다. HTML UI를 교체하더라도 `SystemUi`를 생성하고 `render()`를 호출해야 한다.
 
-- 캔버스 컨테이너에 일시정지·회전·오류 안내(새로고침 포함)와 전체화면 나가기 버튼을 붙입니다.
-- `[data-game-control]` 요소는 준비 전·광고 요청 중·오류 상태에서 자동으로 비활성화합니다.
-- 오류 상태에서는 범위 안의 모든 버튼·입력(`[data-recovery]` 제외)을 막고 캔버스를 `inert`로 전환하며 열린 `<dialog>`를 닫습니다.
-- UI는 자체 표시를 갱신한 뒤 `render()`를 호출하고, 추가 비활성화 조건은 그 뒤에 `disabled ||= ...` 형태로만 덧붙입니다.
+- 캔버스 컨테이너에 일시정지·회전·오류 안내(새로고침 포함)와 전체화면 나가기 버튼을 붙인다.
+- `[data-game-control]` 요소는 준비 전·광고 요청 중·오류 상태에서 자동으로 비활성화한다.
+- 오류 상태에서는 범위 안의 모든 버튼·입력(`[data-recovery]` 제외)을 막고 캔버스를 `inert`로 전환하며 열린 `<dialog>`를 닫는다.
+- UI는 자체 표시를 갱신한 뒤 `render()`를 호출하고, 추가 비활성화 조건은 그 뒤에 `disabled ||= ...` 형태로만 덧붙인다.
 
 ## 서비스
 
-- **Adapter 구조**: `PlatformAdapter`가 광고·구매·분석·플레이 이벤트의 교체 지점이며 `CrazyGamesAdapter`, 개발용 `MockAdapter`, `UnavailableAdapter`를 제공합니다. `PlatformServices`는 gate(기능 스위치·capability·Mock 동의·동시 요청 제어)와 오류 변환을 담당합니다. 실제 CrazyGames 호출에는 Mock 동의를 요구하지 않습니다.
-- **완료 결과와 보상**: 완료 결과 형식은 `{ status: 'completed', mock: boolean }`입니다. 실제 CrazyGames 광고만 `mock: false`이며 `local` SDK와 Mock은 `true`입니다. 보상 지급 규칙은 `src/game/`에서 처리합니다.
-- **플레이·광고 수명**: `app.setGameplay()`는 조작 가능한 상태에 의도적 일시정지와 광고 중단을 합쳐 SDK 이벤트를 보냅니다(탭 숨김만으로는 `gameplayStop`을 보내지 않음). 광고는 요청 시점부터 UI·게임을 멈추고 실제 시작 콜백부터 음소거하며, 종료·실패 시 `service` 이유만 해제합니다. Adapter는 시간 초과·중복/늦은 콜백·`destroy` 시 취소를 처리합니다.
-- **배포 대상과 기능 제한**: Basic Launch에서는 광고 capability를 끕니다(`local` 데모 제외). 지원하지 않는 결제·자체 분석은 `unavailable`/`false`를 반환합니다. `gameConfig.platform`은 검증된 `VITE_PLATFORM`으로 결정하며, `standalone`은 SDK를 요청하지 않고 브라우저 저장소를 사용합니다. 배포 빌드(`vite build`)에서 배포 대상이 없거나 `--mode`와 환경 변수가 충돌하면 시작·빌드 단계에서 중단합니다. 자세한 설정과 제출 방법은 [CrazyGames 안내](CRAZYGAMES.md)를 참고합니다.
+- **Adapter 구조**: `PlatformAdapter`가 광고·구매·분석·플레이 이벤트의 교체 지점이며 `CrazyGamesAdapter`, 개발용 `MockAdapter`, `UnavailableAdapter`를 제공한다. `PlatformServices`는 gate(기능 스위치·capability·Mock 동의·동시 요청 제어)와 오류 변환을 담당한다. 실제 CrazyGames 호출에는 Mock 동의를 요구하지 않는다.
+- **완료 결과와 보상**: 완료 결과 형식은 `{ status: 'completed', mock: boolean }`이다. 실제 CrazyGames 광고만 `mock: false`이며 `local` SDK와 Mock은 `true`이다. 보상 지급 규칙은 `src/game/`에서 처리한다.
+- **플레이·광고 수명**: `app.setGameplay()`는 조작 가능한 상태에 의도적 일시정지와 광고 중단을 합쳐 SDK 이벤트를 보낸다(탭 숨김만으로는 `gameplayStop`을 보내지 않음). 광고는 요청 시점부터 UI·게임을 멈추고 실제 시작 콜백부터 음소거하며, 종료·실패 시 `service` 이유만 해제한다. Adapter는 시간 초과·중복/늦은 콜백·`destroy` 시 취소를 처리한다.
+- **배포 대상과 기능 제한**: Basic Launch에서는 광고 capability를 끈다(`local` 데모 제외). 지원하지 않는 결제·자체 분석은 `unavailable`/`false`를 반환한다. `gameConfig.platform`은 검증된 `VITE_PLATFORM`으로 결정하며, `standalone`은 SDK를 요청하지 않고 브라우저 저장소를 사용한다. 배포 빌드(`vite build`)에서 배포 대상이 없거나 `--mode`와 환경 변수가 충돌하면 시작·빌드 단계에서 중단한다. 자세한 설정과 제출 방법은 [CrazyGames 안내](CRAZYGAMES.md)를 참고한다.
 
 ### 실제 Adapter 도입 절차
 
-1. 별도 파일에서 외부 SDK를 감싸고, `bootstrap.ts`에 선택 경로와 준비 상태별 capability를 추가합니다.
-2. 광고 완료 콜백과 구매 서버 검증·중복 처리·pending·복원 정책을 정의합니다.
-3. 취소·실패·동의 철회·시간 초과·중복 콜백을 테스트합니다. 끝나지 않을 수 있는 Promise에는 timeout과 요청 ID를 둡니다.
-4. SDK 버전·약관·검증 결과를 [의존성](DEPENDENCIES.md)에 기록합니다.
+1. 별도 파일에서 외부 SDK를 감싸고, `bootstrap.ts`에 선택 경로와 준비 상태별 capability를 추가한다.
+2. 광고 완료 콜백과 구매 서버 검증·중복 처리·pending·복원 정책을 정의한다.
+3. 취소·실패·동의 철회·시간 초과·중복 콜백을 테스트한다. 끝나지 않을 수 있는 Promise에는 timeout과 요청 ID를 둔다.
+4. SDK 버전·약관·검증 결과를 [의존성](DEPENDENCIES.md)에 기록한다.
 
-지원하지 않는 기능을 성공으로 가장하지 않습니다. 공유·로그인·리더보드 등은 실제 게임 요구사항이 정해질 때 추가합니다.
+지원하지 않는 기능을 성공으로 가장하지 않는다. 공유·로그인·리더보드 등은 실제 게임 요구사항이 정해질 때 추가한다.
