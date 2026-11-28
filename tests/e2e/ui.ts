@@ -29,7 +29,7 @@ export function ui(root: Page | FrameLocator) {
     best: id('best'),
     rounds: id('rounds'),
     storageKind: id('storage-kind'),
-    /** data-state: 'ready' | 'retrying' | 'protected' | 'platform-unavailable' */
+    /** data-state: 'ready' | 'retrying' | 'protected' | 'session-only' | 'platform-unavailable' */
     storageStatus: id('storage-status'),
     /** data-kind: 'info' | 'loading-error'. 서비스 결과 코드(completed 등)를 그대로 포함한다. */
     notice: id('notice'),

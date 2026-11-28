@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { App } from '../app';
 import { gameConfig } from '../config/game';
 import { isFramed, resolveLayout, type Layout } from '../core/layout';
-import { fullscreenAvailable, toggleFullscreen } from '../core/screen';
+import { fullscreenAvailable } from '../core/screen';
 import { assetKeys } from '../game/assets';
 import { GameScene, MenuScene } from '../game/scenes';
 import { MockAdapter } from '../services/platform';
@@ -120,11 +120,10 @@ export class Shell {
     notice.textContent = message;
     notice.dataset.kind = kind;
     if (this.layout !== 'embed') return;
-    // embed에서는 게임 화면 위에 잠깐 표시한다. 로딩 실패는 계속 보인다.
+    // embed에서는 일반 알림을 게임 화면 위에 잠깐 표시한다.
     notice.hidden = false;
     clearTimeout(this.noticeTimer);
-    if (kind === 'info')
-      this.noticeTimer = window.setTimeout(() => (notice.hidden = true), 4000);
+    this.noticeTimer = window.setTimeout(() => (notice.hidden = true), 4000);
   }
   private bind() {
     const app = this.app;
@@ -154,10 +153,19 @@ export class Shell {
       (app.game?.scene.getScene('Game') as GameScene).goHome();
     });
     this.on('fullscreen', 'click', () => {
-      if (app.game) toggleFullscreen(app.game, gameConfig.orientation);
+      app.game?.scale.toggleFullscreen();
     });
+    const settingFields = [
+      'master',
+      'music',
+      'sfx',
+      'muted',
+      'reducedMotion',
+    ] as const;
     this.on('settings', 'click', () => {
-      for (const [key, value] of Object.entries(app.settings.data)) {
+      const settings = app.settings.data;
+      for (const key of settingFields) {
+        const value = settings[key];
         const input = this.element<HTMLInputElement>(key);
         if (typeof value === 'boolean') input.checked = value;
         else input.value = String(value);
@@ -169,13 +177,7 @@ export class Shell {
       app.pause.set('settings', false);
       app.flush();
     });
-    for (const key of [
-      'master',
-      'music',
-      'sfx',
-      'muted',
-      'reducedMotion',
-    ] as const) {
+    for (const key of settingFields) {
       this.on(key, 'input', () => {
         const input = this.element<HTMLInputElement>(key);
         app.settings.update((settings) => ({
@@ -252,6 +254,7 @@ export class Shell {
         if (
           app.fatalError ||
           event.code !== 'Escape' ||
+          event.repeat ||
           this.element<HTMLDialogElement>('settings-dialog').open ||
           app.session.mode !== 'playing'
         )
@@ -273,9 +276,18 @@ export class Shell {
     };
     set('best', String(best));
     set('rounds', String(rounds));
-    set('compact-stats', t.compactStats(best, rounds));
+    const sessionOnly =
+      app.storageKind === 'local' &&
+      [app.save, app.settings].every(
+        (store) => store.status === 'unavailable' && !store.canRetry,
+      );
+    set(
+      'compact-stats',
+      sessionOnly ? t.storage.sessionOnlyLabel : t.compactStats(best, rounds),
+    );
     set('compact-stats-detail', `${t.best} ${best} · ${t.rounds} ${rounds}`);
-    if (app.loadingError) this.notify(app.loadingError, 'loading-error');
+    if (this.layout === 'page' && app.loadingError)
+      this.notify(app.loadingError, 'loading-error');
 
     const ready =
       app.save.status === 'ready' && app.settings.status === 'ready';
@@ -291,7 +303,7 @@ export class Shell {
         ? 'SDK LOCAL SAVE'
         : app.storageKind === 'crazygames'
           ? 'CRAZYGAMES SAVE'
-          : app.storageKind === 'local'
+          : app.storageKind === 'local' && !sessionOnly
             ? 'LOCAL SAVE'
             : 'SAVE UNAVAILABLE',
     );
@@ -299,29 +311,34 @@ export class Shell {
     this.element('retry-save').hidden = !canRetry;
     set(
       'settings-storage',
-      app.settings.status === 'ready'
-        ? storageMessage
-        : t.storage.settingsFailed,
+      sessionOnly
+        ? t.storage.sessionOnly
+        : app.settings.status === 'ready'
+          ? storageMessage
+          : t.storage.settingsFailed,
     );
     // data-state는 문구와 관계없이 저장 상태를 나타낸다(검사·다른 UI에서 사용).
-    const storageState = app.platformWarning
-      ? 'platform-unavailable'
-      : ready
-        ? 'ready'
-        : canRetry
-          ? 'retrying'
-          : 'protected';
+    const storageState =
+      app.platformWarning ||
+      (sessionOnly
+        ? 'session-only'
+        : ready
+          ? 'ready'
+          : canRetry
+            ? 'retrying'
+            : 'protected');
     const storageStatus = this.element('storage-status');
     storageStatus.dataset.state = storageState;
-    storageStatus.textContent =
-      storageState === 'platform-unavailable'
-        ? app.text.system.platformUnavailable
-        : storageState === 'ready'
-          ? storageMessage
-          : storageState === 'retrying'
-            ? t.storage.retrying
-            : t.storage.protectedMode(app.save.status, app.settings.status);
+    storageStatus.textContent = {
+      'platform-unavailable': app.text.system.platformUnavailable,
+      'session-only': t.storage.sessionOnly,
+      ready: storageMessage,
+      retrying: t.storage.retrying,
+      protected: t.storage.protectedMode(app.save.status, app.settings.status),
+    }[storageState];
     this.element('settings').dataset.alert = String(storageState !== 'ready');
+    this.element<HTMLButtonElement>('reset').disabled = sessionOnly;
+    this.element<HTMLButtonElement>('reset-settings').disabled = sessionOnly;
 
     this.element('mode-label').textContent = app.pause.paused
       ? 'PAUSED'

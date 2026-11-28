@@ -1,7 +1,9 @@
-import { expect, it, vi } from 'vitest';
+import { EventEmitter } from 'node:events';
+import type Phaser from 'phaser';
+import { expect, it, onTestFinished, vi } from 'vitest';
 import { isFramed, resolveLayout } from '../../src/core/layout';
 import { pickLocale } from '../../src/core/locale';
-import { releaseOrientationOnExit } from '../../src/core/screen';
+import { bindFullscreenOrientation } from '../../src/core/screen';
 import { locales, resolveStrings } from '../../src/game/strings';
 
 it('embeds inside iframes, lets the URL override, and honours a fixed layout', () => {
@@ -54,27 +56,44 @@ it('resolves strings for the configured or detected locale', () => {
   );
 });
 
-it('releases the orientation lock whenever fullscreen ends', () => {
-  const listeners = new Map<string, () => void>();
-  const scale = {
-    on: vi.fn((event: string, listener: () => void) => {
-      listeners.set(event, listener);
-    }),
-    off: vi.fn((event: string) => {
-      listeners.delete(event);
-    }),
+it('locks orientation when the game enters fullscreen and releases it on exit or teardown', () => {
+  const stage = {};
+  const doc = { fullscreenElement: null as object | null };
+  vi.stubGlobal('document', doc);
+  onTestFinished(() => {
+    vi.unstubAllGlobals();
+  });
+  const scale = Object.assign(new EventEmitter(), { fullscreenTarget: stage });
+  const orientation = {
+    lock: vi.fn().mockResolvedValue(undefined),
+    unlock: vi.fn(),
   };
-  const orientation = { unlock: vi.fn() };
-  const stop = releaseOrientationOnExit(
-    scale as never,
-    orientation as unknown as ScreenOrientation,
+  const stop = bindFullscreenOrientation(
+    scale as unknown as Phaser.Scale.ScaleManager,
+    'portrait',
+    orientation,
   );
-  listeners.get('leavefullscreen')?.();
+  scale.emit('fullscreenfailed');
+  doc.fullscreenElement = {};
+  scale.emit('enterfullscreen');
+  expect(orientation.lock).not.toHaveBeenCalled();
+  doc.fullscreenElement = stage;
+  scale.emit('enterfullscreen');
+  expect(orientation.lock).toHaveBeenCalledExactlyOnceWith('portrait');
+  doc.fullscreenElement = null;
+  scale.emit('leavefullscreen');
   expect(orientation.unlock).toHaveBeenCalledTimes(1);
+
+  doc.fullscreenElement = stage;
+  orientation.lock.mockRejectedValue(
+    new DOMException('Denied', 'SecurityError'),
+  );
+  scale.emit('enterfullscreen');
   orientation.unlock.mockImplementation(() => {
     throw new DOMException('Not supported', 'NotSupportedError');
   });
-  expect(() => listeners.get('leavefullscreen')?.()).not.toThrow();
   stop();
-  expect(listeners.has('leavefullscreen')).toBe(false);
+  expect(orientation.unlock).toHaveBeenCalledTimes(2);
+  expect(scale.listenerCount('enterfullscreen')).toBe(0);
+  expect(scale.listenerCount('leavefullscreen')).toBe(0);
 });

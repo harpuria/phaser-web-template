@@ -10,6 +10,49 @@ test.beforeEach(async ({ page }) => {
   await disableSdk(page);
 });
 
+test('settings with an extra saved field can be edited and reopened', async ({
+  page,
+}) => {
+  const u = ui(page);
+  const key = `${storagePrefix}:settings`;
+  await page.goto('/');
+  await page.evaluate((key) => {
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 1,
+        data: {
+          muted: true,
+          master: 0.5,
+          music: 0.25,
+          sfx: 0.75,
+          reducedMotion: false,
+          legacyOption: true,
+        },
+      }),
+    );
+  }, key);
+  await page.reload();
+  await u.settings.click();
+  await expect(u.muted).toBeChecked();
+  await u.muted.uncheck();
+  await u.settingsDone.click();
+  await page.reload();
+  await u.settings.click();
+  await expect(u.settingsDialog).toBeVisible();
+  await expect(u.muted).not.toBeChecked();
+  expect(
+    await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key)!).data,
+      key,
+    ),
+  ).toMatchObject({
+    muted: false,
+    master: 0.5,
+    legacyOption: true,
+  });
+});
+
 test('corrupt data remains intact until explicit reset', async ({ page }) => {
   const u = ui(page);
   await page.goto('/');
@@ -66,7 +109,23 @@ test('fullscreen keeps start, pause, restart, and menu controls usable', async (
     await u.fullscreen.isHidden(),
     'Fullscreen is not supported by this browser/device',
   );
+  const observesOrientation = await page.evaluate(() => {
+    if (!screen.orientation) return false;
+    Object.defineProperty(screen.orientation, 'lock', {
+      value: async () => {
+        document.documentElement.dataset.fullscreenAtLock =
+          document.fullscreenElement?.id ?? 'none';
+        throw new DOMException('Orientation lock denied', 'SecurityError');
+      },
+    });
+    return true;
+  });
   await u.fullscreen.click();
+  if (observesOrientation)
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-fullscreen-at-lock',
+      'stage',
+    );
   await expect
     .poll(() => page.evaluate(() => document.fullscreenElement?.id))
     .toBe('stage');
