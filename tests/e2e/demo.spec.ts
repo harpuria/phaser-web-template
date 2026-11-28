@@ -104,7 +104,7 @@ test('service gates and responsive layout', async ({ page }, testInfo) => {
   expect(errors).toEqual([]);
 });
 
-test('Escape toggles the manual pause during play', async ({
+test('Escape toggles the manual pause once per key press during play', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Escape needs a keyboard');
@@ -113,9 +113,14 @@ test('Escape toggles the manual pause during play', async ({
   await u.play.click();
   await expect(u.mode).toHaveText('PLAYING');
   await u.game.focus();
-  await page.keyboard.press('Escape');
+  await page.keyboard.down('Escape');
+  await expect(u.pause).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.down('Escape');
+  await expect(u.pause).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.up('Escape');
   await expect(u.pause).toHaveAttribute('aria-pressed', 'true');
   await page.keyboard.press('Escape');
+  await expect(u.pause).toHaveAttribute('aria-pressed', 'false');
   await expect(u.pauseOverlay).toBeHidden();
 });
 

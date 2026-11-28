@@ -23,7 +23,7 @@ npm 런타임 의존성은 Phaser 하나이고 나머지는 devDependencies입�
 확인한 CDN 응답의 `Last-Modified`는 `2026-10-12T07:32:41Z`, 파일 SHA-256은 `d4c44671cafbb694a0fd054078303242681bdf1b5908d6fb9f766d1de3f25911`입니다. 이는 확인 당시 파일의 식별값이며 버전 고정이나 무결성 강제 설정은 아닙니다.
 초기화·로컬 광고·Data 저장 복원 결과와 미검증 범위는 [검증 기록](template/VALIDATION.md)에 남깁니다.
 설치 근거는 [SDK v3 공식 문서](https://docs.crazygames.com/sdk/intro/), 사용 조건은 [Developer Terms](https://files.crazygames.com/documents/developer_terms_20250818.pdf)입니다.
-Node.js는 22.12 이상(Vite 8 요구 사항)이 필요하며, 권장 버전은 `.nvmrc`의 24입니다. CI는 Node 24 전체 검사와 별도로 Node 22.12.0에서 `npm run check`를 실행합니다.
+Node.js는 ESLint와 Vitest가 함께 지원하는 `^22.13.0 || ^24.0.0 || >=26.0.0` 범위를 사용합니다. 권장 버전은 `.nvmrc`의 24입니다. CI는 Node 22.13.0과 24 모두에서 `npm ci --engine-strict`로 설치한 뒤 `npm run check`를 실행합니다.
 CI는 `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` 모두 v7을 사용합니다.
 
 ## 2026-11-04 갱신

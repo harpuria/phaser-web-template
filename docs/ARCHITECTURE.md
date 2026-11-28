@@ -49,7 +49,7 @@ ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import/re-ex
 1. `main.ts`가 `createPlatform()`으로 SDK 초기화와 저장소 선택을 기다린 뒤 `App`과 `Shell`을 만들고 오류 감시를 시작합니다.
 2. `BootScene`이 `app.attach(game)`으로 오디오, 탭 숨김/pagehide 처리, 자동 저장 타이머를 연결합니다.
 3. `PreloadScene`이 `loadingStart`를 알리고 게임의 `queueAssets`로 asset을 불러오며 진행률을 표시합니다.
-   하나라도 실패하면 안내를 띄우고 멈춥니다. 모두 성공하면 `loadingStop`, `app.ready = true` 후 `startScene`으로 넘어갑니다.
+   필수 asset을 불러오지 못하면 오류 안내와 게임을 새로고침할 버튼을 표시합니다. 모두 성공하면 `loadingStop`, `app.ready = true` 후 `startScene`으로 넘어갑니다.
 4. 장면 전환은 `transition()`이 registry lock으로 중복 요청을 막고, 장면 shutdown 때 lock을 풉니다.
 5. HMR 때는 오류 감시, HTML listener, 타이머, SDK listener·진행 중 요청, 오디오, Phaser 게임을 정리합니다. SDK 초기화 도중 dispose되면 게임을 만들지 않습니다.
 
@@ -92,7 +92,7 @@ ESLint가 `core/`·`services/`에서 `game/`으로 향하는 정적 import/re-ex
 - 입력은 Phaser world 좌표를 쓰고, 캔버스(`#game`)만 `touch-action: none`입니다. 키보드 이벤트는 `#game`에서만 받습니다.
 - `Scale.EXPAND` + 안전 영역(`gameConfig.width`×`height`). `core/viewport.ts`의 `centerSafeArea`가 카메라를 렌더 배율 k로 zoom하고, 화면 크기 변경 때마다 안전 영역 중앙에 맞춥니다.
 - 게임 화소 크기는 `안전 영역 × k`(`App.renderScale`, 시작 시 한 번 결정). 텍스처는 k배로 준비해 `1/k`로 줄여 씁니다.
-- 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함하는 게임 카드 `#stage`입니다. 전체화면에서도 시작·일시정지·재개·메뉴·재시작이 가능합니다. 전체화면을 어떤 방법으로 나가도 방향 고정을 풉니다(`releaseOrientationOnExit`). 전체화면 버튼은 iframe이 전체화면을 허용할 때(`document.fullscreenEnabled`)만 보입니다.
+- 전체화면 대상은 캔버스·오버레이·조작 버튼 줄을 포함하는 게임 카드 `#stage`입니다. 전체화면에서도 시작·일시정지·재개·메뉴·재시작이 가능합니다. `bindFullscreenOrientation`은 게임 카드가 전체화면에 진입한 뒤 방향 고정을 요청하고, 버튼·Esc·시스템 뒤로 가기로 전체화면을 종료하면 고정을 풉니다. 전체화면 버튼은 iframe이 전체화면을 허용할 때(`document.fullscreenEnabled`)만 보입니다.
 - 배치는 `resolveLayout`이 시작 시 한 번 정합니다. `gameConfig.layout`이 `auto`면 iframe 안은 `embed`, 단독 페이지는 `page`이며 `?layout=`이 우선합니다. `embed`는 `#stage`가 창 전체를 채우고 문서가 스크롤되지 않습니다.
 - 문구는 `App.text`(`src/game/strings.ts`)에서 읽습니다. `gameConfig.locale`이 `auto`면 브라우저 언어에서 지원 언어를 고르고, 없으면 `fallbackLocale`입니다. `core/`·`services/`는 문구를 직접 갖지 않고 상태 코드(예: `PlatformContext.warning = 'platform-unavailable'`)를 돌려줍니다.
 - 설정을 갱신하거나 초기화한 뒤 `app.applySettings()`를 호출합니다. 오디오와 `app.listenSettings()` 구독자에 즉시 반영하고 Shell을 갱신합니다. 구독은 현재 설정을 즉시 전달하며 반환한 해제 함수를 장면 shutdown 때 호출합니다. 메뉴 반복 tween과 CSS 전환은 저장된 `reducedMotion`을 따릅니다. OS 설정은 새 설정의 기본값으로 사용합니다.

@@ -6,7 +6,7 @@ import { settingsSchema, type Settings } from './core/settings';
 import { Store } from './core/store';
 import { progressSchema, type Progress } from './game/save';
 import { chooseRenderScale } from './core/renderScale';
-import { releaseOrientationOnExit } from './core/screen';
+import { bindFullscreenOrientation } from './core/screen';
 import { Session } from './game/session';
 import { resolveStrings } from './game/strings';
 import type { PlatformContext } from './services/bootstrap';
@@ -123,7 +123,7 @@ export class App {
       this.platform.listenMute((muted) =>
         this.audio?.setExternalMute('platform', muted),
       ),
-      releaseOrientationOnExit(game.scale),
+      bindFullscreenOrientation(game.scale, gameConfig.orientation),
     );
     const visibility = () => {
       if (document.hidden) this.flush();

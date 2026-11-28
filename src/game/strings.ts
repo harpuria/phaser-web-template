@@ -50,6 +50,9 @@ const ko = {
       crazygames:
         'CrazyGames에 자동으로 저장됩니다. 로그인하면 기기 간 동기화됩니다.',
       local: '이 브라우저에 자동으로 저장됩니다.',
+      sessionOnlyLabel: '저장 불가',
+      sessionOnly:
+        '이 화면에서는 브라우저 저장소에 접근할 수 없습니다. 계속 플레이할 수 있지만 새로고침하면 이번 플레이 기록과 설정 변경이 사라집니다.',
       retrying:
         '저장하지 못했습니다. 진행 상태를 유지하며 자동으로 다시 시도합니다. 저장 다시 시도 버튼으로 즉시 저장할 수도 있습니다.',
       protectedMode: (save: string, settings: string) =>
@@ -163,6 +166,9 @@ const en: Strings = {
       crazygames:
         'Progress is saved to CrazyGames automatically and syncs across devices when you log in.',
       local: 'Progress is saved in this browser automatically.',
+      sessionOnlyLabel: 'Saving unavailable',
+      sessionOnly:
+        'Browser storage is unavailable here. You can keep playing, but reloading will discard progress and settings changes from this session.',
       retrying:
         'Saving failed. Your progress is kept and saving will be retried automatically. You can also press Retry saving.',
       protectedMode: (save, settings) =>

@@ -8,7 +8,7 @@ CrazyGames 입점을 위한 SDK v3 초기화·플레이 이벤트·광고 Adapte
 
 ## 실행하기
 
-Node.js 22.12 이상이 필요합니다(권장: `.nvmrc`의 Node 24).
+Node.js는 `.nvmrc`의 24.x를 권장합니다. 22.x는 22.13.0부터 지원하며, 26.0.0 이상도 사용할 수 있습니다.
 
 ```bash
 npm ci

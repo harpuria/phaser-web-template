@@ -70,9 +70,10 @@ export class SystemUi {
       control.disabled = blocked;
     this.element('pause-overlay').hidden =
       !app.pause.paused || !app.gameplayActive;
-    this.element('error-overlay').hidden = !app.fatalError;
-    this.element('error-message').textContent = app.fatalError;
-    if (!app.fatalError) return;
+    const error = app.fatalError || app.loadingError;
+    this.element('error-overlay').hidden = !error;
+    this.element('error-message').textContent = error;
+    if (!error) return;
     for (const control of scope.querySelectorAll<
       | HTMLButtonElement
       | HTMLInputElement
